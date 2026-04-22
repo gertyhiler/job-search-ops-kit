@@ -30,18 +30,32 @@ Pinned for 2026-04-22. All versions are latest stable unless otherwise noted. Up
 - **Ink** latest (React in the terminal)
 - **Commander** for `js init`, `js add-vacancy`, `js apply`, `js funnel`, `js today`, `js tick`
 
+## Runner Adapters
+
+- **Codex CLI** — supported runner adapter for background, supervised, and external interactive runs
+- **Cursor CLI / cursor-agent** — supported runner adapter for background, supervised, and external interactive runs
+- Adapter selection lives in `user-data/config/runtime-settings.yaml`; the system uses one global adapter at a time for model-backed runs
+- Router chooses execution policy (`model`, `reasoning_effort`, tools, escalation), not which CLI provider to invoke
+
 ## MCP
 
 - **`@modelcontextprotocol/sdk` v1.29.0+** — critical lower bound. Versions 1.10.0–1.25.3 are vulnerable (CVE-2026-25536). v2 alpha is expected in Q1 2026; stay on 1.x stable.
-- Our own `packages/mcp-server` — TypeScript + MCP SDK. Single wrapper around SQLite and memory. Tools listed in [architecture.md §5](./architecture.md).
+- Our own `packages/mcp-server` — TypeScript + MCP SDK. Single wrapper around SQLite and memory. Tools listed in [architecture.md §6](./architecture.md).
 
 ## Browser Automation (two modes, chosen per-site by recipe)
 
-**Mode A — Attend a live browser.** User's own Chrome/Arc, already logged in, user retains control. Agent attaches via the `user-playwright` / browser-use MCP (CDP or extension) and interacts with the active tab. Good for sites with 2FA/CAPTCHA/anti-bot, the first runs of a new recipe, and manual oversight.
+**Mode A — Attend a live browser.** User's own Chrome/Arc, already logged in, user retains control. This capability can be reached from:
+
+- a `supervised` run owned by the app/backend when the selected runner adapter can start the needed MCP/browser flow from an app-owned terminal session;
+- an `interactive_external` run in Codex/Cursor or another compatible client when supervised mode is insufficient.
+
+Good for sites with 2FA/CAPTCHA/anti-bot, the first runs of a new recipe, and manual oversight.
 
 **Mode B — Spawn an isolated browser.** Agent launches Playwright with `launchPersistentContext({ userDataDir: 'user-data/runtime/browser-profiles/<site>' })`. The user logs in once into that profile; cookies/session persist; scheduled applier runs thereafter work unattended. Good for vetted career-page recipes and overnight batches with the laptop closed.
 
 **Recipe policy** in `packages/browser-automation/recipes/<site>.yaml`: fields `mode: attended|unattended`, `min_confidence_to_unattend: 0.8`. A new recipe starts `attended`; after N successful runs with `confidence ≥ 0.8` it can be promoted to `unattended` via the dashboard's **Schedules → Promote to live**.
+
+**Validation checkpoint:** deterministic attended browser automation through a CLI runner is not assumed solved. The system treats `supervised` as feasible and preferred, but keeps `interactive_external` as a required fallback until command flags + prompt contract are proven stable.
 
 ## Scripts Glue
 
@@ -62,8 +76,12 @@ Pinned for 2026-04-22. All versions are latest stable unless otherwise noted. Up
 
 ## Agent Runner
 
-- **Codex CLI headless** — `codex exec --model <id> --prompt @prompts/roles/<role>.md --mcp .codex/mcp.json --json` — primary background runner. The spawner parses the JSON event stream and writes an `agent_run` row.
-- **Cursor Agent** — for interactive sessions (tailor, reviewer, interviewer, strategy brainstorm) and for debugging prompts.
+- **Selected runner adapter** — a single global CLI adapter chosen in runtime settings and used for all model-backed runs.
+- **Run modes**:
+  - `background` — scheduler/app launches the adapter non-interactively for safe automatic work.
+  - `supervised` — app/backend launches the adapter as a PTY-backed terminal session, streams output, and surfaces approvals/prompts.
+  - `interactive_external` — user works in an external app/client directly and the resulting session is ingested/audited after the fact.
+- **Spawn contract** — resolve adapter -> route task -> launch with prompt + MCP profile + run mode -> record `agent_run`.
 
 ## Update Policy
 

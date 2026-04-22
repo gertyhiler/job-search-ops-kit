@@ -8,7 +8,7 @@ Unlike a human-in-the-loop learning system, job search treats speed as a feature
 
 ### Weekly cycle
 
-1. Scheduler fires `codex exec --model gpt-5.4 --prompt prompts/roles/strategist.md` (see `automations/weekly-strategy-consolidation.md`).
+1. Scheduler resolves the selected runner adapter, routes the strategist task, and starts a `background` run for `prompts/roles/strategist.md` (see `automations/weekly-strategy-consolidation.md`).
 2. Strategist reads funnel + events + performance via MCP and produces one `strategy-change-proposal` with `before`, `after`, `rationale`, `evidence_refs`, `expected_impact`, `confidence` (0–1), `reversibility` (trivial | moderate | hard).
 3. **Deterministic evaluator** `auto_decide_strategy(proposal)` (an MCP tool, not an LLM) returns a verdict:
    - `auto_accept` — `confidence ≥ 0.75` AND `reversibility ≠ hard` AND `expected_impact ≥ threshold`.
@@ -19,7 +19,7 @@ Unlike a human-in-the-loop learning system, job search treats speed as a feature
 5. Async notification: macOS notification + entry in `today-context.md` + row in `agent_runs`. Not blocking.
 6. Rollback is cheap: strategy is plain YAML under git, events are append-only, performance is derived. `js strategy rollback <version>` reverts the YAML commit and marks the proposal `reverted`.
 
-**Result:** one `codex exec` → three MCP calls → one audit row. No Python glue in the middle, no separate launchd crons.
+**Result:** one routed adapter run → three MCP calls → one audit row. No Python glue in the middle, no separate launchd crons.
 
 ### What stays with the human
 
@@ -35,7 +35,7 @@ Everything else runs itself.
 
 ## 2. Memory Consolidation (analogous to mastery update)
 
-- `memory-manager` runs after every session (session-end hook → `ingest_session`) and nightly (23:00, `codex exec --model gpt-5.4-nano --prompt prompts/roles/memory-manager.md`).
+- `memory-manager` runs after every session (session-end hook → `ingest_session`) and nightly (23:00, routed adapter run for `prompts/roles/memory-manager.md` in `background` mode).
 - In the run, the agent calls deterministic MCP tools: `extract_events(journal_entry)` parses emails/transcripts into events, `update_performance()` rebuilds `performance/*.yaml` from `events/*.jsonl` (means, percentiles — no LLM).
 - LLM output appears only in the narrative journal summary.
 - Every change to memory goes through the MCP server, so every call is visible in `agent_runs.tool_calls` and `runtime/audit/memory_consolidation.jsonl`.
@@ -46,7 +46,8 @@ Everything else runs itself.
 Three layers, all local:
 
 1. **Event sourcing** in `user-data/memory/events/application-events.jsonl` — append-only, rebuilds the full state.
-2. **Runtime audit** — `user-data/runtime/audit/agent_runs.jsonl` + table `agent_run`: every Codex/Cursor spawn with ts, duration, role, model, `prompt_sha`, `exit_code`, `tool_calls_count`, `changed_paths`, `dry_run`, `catchup`.
+2. **Runtime audit** — `user-data/runtime/audit/agent_runs.jsonl` + table `agent_run`: every runner-adapter spawn or ingested external interactive session with ts, duration, role, model, `prompt_sha`, `exit_code`, `tool_calls_count`, `changed_paths`, `dry_run`, `catchup`.
+   This includes `background`, `supervised`, and `interactive_external` runs, plus the selected runner adapter and the routing decision trace.
 3. **Web dashboard** (`packages/web`):
    - Pipeline (Kanban) by application status.
    - Funnel metrics: response rate, apply → screen, screen → interview, interview → offer.

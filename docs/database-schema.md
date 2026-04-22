@@ -49,7 +49,10 @@ The canonical location will be `packages/db/schema.ts` (Drizzle) from M3 onward.
 ### `agent_run`
 - `id`, `ts_started`, `ts_finished?`, `scheduled_for?`
 - `role`, `model`, `prompt_sha`, `schedule_id?`
+- `runner_adapter`, `run_mode` (background | supervised | interactive_external | script_only)
+- `routing_decision_ref?` or inline routed fields (`reasoning_effort`, `allow_tools`, `fallback_model`)
 - `exit_code?`, `duration_ms?`, `tool_calls_count?`, `changed_paths[]`
+- `pty_session_id?`, `approval_state?`, `escalation_reason?`, `capabilities_used[]`
 - `dry_run` (bool), `catchup` (bool)
 - `trigger` (boot | sweep | manual | cli | session_hook)
 - `notes_path?`
@@ -78,6 +81,10 @@ The canonical location will be `packages/db/schema.ts` (Drizzle) from M3 onward.
 | `strategy_change` | `strategy/change-proposals/<id>.yaml` + `strategy/decision-log.jsonl` |
 | `schedule` | seed from `config/defaults/schedules.seed.yaml`; runtime only in DB |
 | `agent_run` | `runtime/audit/agent_runs.jsonl` mirror |
+
+## Live Supervision Notes
+
+For long-running supervised runs, the app may keep ephemeral process state (PTY handle, live approval prompt, browser attachment status) in memory or a local runtime registry. Durable audit still anchors on `agent_run`, which records how the run was launched, what capabilities it used, and why it escalated.
 
 ## Recovery
 

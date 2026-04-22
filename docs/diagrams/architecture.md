@@ -4,9 +4,10 @@ End-to-end dataflow: agents call MCP servers; `job-search` MCP is the sole write
 
 ```mermaid
 flowchart LR
-    subgraph agents [Agents]
-        codex[Codex runner]
-        cursor[Cursor IDE]
+    subgraph adapters [Runner adapters]
+        codex[Codex CLI]
+        cursor[Cursor CLI]
+        ext[External app]
     end
 
     subgraph mcp [MCP servers]
@@ -33,15 +34,20 @@ flowchart LR
     end
 
     subgraph app [Self-hosted Next.js 16 app - started on demand]
-        web[Next.js dashboard]
+        web[Next.js dashboard and control plane]
         sched[DB-driven sweep - next_run_at in SQLite]
         cli[Ink CLI/TUI - js tick, js today]
+        orch[Local orchestration runtime]
     end
 
     triggers["Triggers: app boot, dashboard request, js tick, optional launchd poker 15min"] --> sched
-    sched -->|"sweep: due tasks"| spawn[Subprocess spawner]
-    spawn -->|"codex exec with role, model, prompt"| agents
-    agents --> mcp
+    sched -->|"sweep: due tasks"| route[Pre-dispatch router]
+    route --> spawn[Adapter spawner]
+    web -->|"manual trigger or supervised attach"| orch
+    orch --> spawn
+    spawn -->|"background or supervised run"| adapters
+    ext -.->|"interactive_external session"| jsmcp
+    adapters --> mcp
     hhmcp -->|"search, apply"| vacancies
     hhmcp --> events
     jsmcp -->|"read, write"| memory
@@ -51,6 +57,7 @@ flowchart LR
     web --> sqlite
     web --> memory
     web -->|"manage schedules, next_run_at, catchup"| sched
+    web -->|"live terminal stream, approvals, stop/kill/retry"| orch
     cli --> jsmcp
     cli -.->|"standalone MCP when app is offline"| jsmcp
     events -->|"derive via memory-manager run"| perf

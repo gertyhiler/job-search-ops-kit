@@ -66,7 +66,7 @@ Goal: a canonical public repo and the seed artefacts imported into `user-data/`.
 
 ### Milestone 4 — MCP Server
 
-- `packages/mcp-server` with the tool surface from [architecture.md §5](./architecture.md).
+- `packages/mcp-server` with the tool surface from [architecture.md §6](./architecture.md).
 - Registration in `.codex/mcp.json` and `.cursor/mcp.json`.
 - Install and configure `headhunter-mcp-server` (OAuth via dev.hh.ru/admin).
 
