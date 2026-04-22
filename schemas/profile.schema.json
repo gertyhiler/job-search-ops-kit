@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "job-search/profile",
+  "title": "Profile",
+  "description": "Candidate profile: narrative, constraints, preferences. Master resume is tracked separately.",
+  "type": "object",
+  "required": ["candidate", "constraints", "preferences"],
+  "properties": {
+    "candidate": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "headline": { "type": "string" },
+        "years_experience": { "type": "number" },
+        "seniority": { "type": "string", "enum": ["junior", "middle", "senior", "lead", "principal"] },
+        "summary_markdown": { "type": "string" },
+        "highlights": { "type": "array", "items": { "type": "string" } },
+        "blind_spots": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "constraints": {
+      "type": "object",
+      "properties": {
+        "location": { "type": "array", "items": { "type": "string" } },
+        "remote": { "type": "string", "enum": ["remote", "onsite", "hybrid", "any"] },
+        "work_permit": { "type": "array", "items": { "type": "string" } },
+        "languages": { "type": "array", "items": { "type": "object", "properties": { "code": { "type": "string" }, "level": { "type": "string" } }, "required": ["code"] } },
+        "willing_to_relocate": { "type": "boolean" },
+        "no_travel": { "type": "boolean" },
+        "preferred_contact_channel": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "preferences": {
+      "type": "object",
+      "properties": {
+        "salary_bottom_line": { "type": "number" },
+        "salary_target": { "type": "number" },
+        "salary_stretch": { "type": "number" },
+        "currency": { "type": "string" },
+        "preferred_industries": { "type": "array", "items": { "type": "string" } },
+        "avoid_list": { "type": "array", "items": { "type": "string" } },
+        "company_size": { "type": "array", "items": { "type": "string" } },
+        "must_have_tech": { "type": "array", "items": { "type": "string" } },
+        "deal_breakers": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

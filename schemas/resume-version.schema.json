@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "job-search/resume-version",
+  "title": "ResumeVersion",
+  "description": "A targeted variant of the master JSON Resume, pinned to a commit.",
+  "type": "object",
+  "required": ["id", "slug", "base_commit_sha", "created_at"],
+  "properties": {
+    "id": { "type": "string" },
+    "slug": { "type": "string" },
+    "base_commit_sha": { "type": "string" },
+    "patches_json_path": { "type": ["string", "null"] },
+    "rendered_pdf_path": { "type": ["string", "null"] },
+    "targeted_domain": { "type": ["string", "null"] },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}

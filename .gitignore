@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# OS / editor noise
+Thumbs.db
+.idea/
+.vscode/
+
+# ============================================================================
+# OSS / privacy guards — DO NOT commit anything below this line.
+# Private user data MUST live under user-data/, which is fully gitignored.
+# ============================================================================
+
+# User data: resume, brief, memory, evidence, runtime DB, browser profiles
+user-data/
+
+# Environment / secrets anywhere
+.env
+.env.*
+!.env.example
+
+# Local SQLite databases (hot mutable state)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Playwright / persistent browser profiles
+runtime/browser-profiles/
+
+# Build artefacts (will appear in later milestones)
+node_modules/
+.next/
+.turbo/
+dist/
+build/
+out/
+
+# Runtime observability (audit logs kept local; schema files tracked)
+runtime/audit/*.jsonl
+runtime/audit/*.json
+runtime/health/*.json
+!runtime/audit/.gitkeep
+!runtime/health/.gitkeep

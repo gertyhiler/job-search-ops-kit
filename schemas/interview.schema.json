@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "job-search/interview",
+  "title": "Interview",
+  "type": "object",
+  "required": ["id", "application_id", "stage", "scheduled_at"],
+  "properties": {
+    "id": { "type": "string" },
+    "application_id": { "type": "string" },
+    "stage": { "type": "string", "enum": ["screening", "technical", "behavioral", "system-design", "final", "other"] },
+    "scheduled_at": { "type": "string", "format": "date-time" },
+    "duration_min": { "type": ["number", "null"] },
+    "format": { "type": ["string", "null"], "enum": [null, "onsite", "video", "phone", "async-task"] },
+    "notes_path": { "type": ["string", "null"] },
+    "verdict": { "type": ["string", "null"], "enum": [null, "pass", "fail", "borderline", "withdrawn"] },
+    "questions_asked": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": true
+}

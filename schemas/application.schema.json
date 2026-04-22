@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "job-search/application",
+  "title": "Application",
+  "type": "object",
+  "required": ["id", "vacancy_id", "channel", "status"],
+  "properties": {
+    "id": { "type": "string" },
+    "vacancy_id": { "type": "string" },
+    "resume_version_id": { "type": ["string", "null"] },
+    "cover_letter_id": { "type": ["string", "null"] },
+    "channel": { "type": "string", "enum": ["hh", "site", "linkedin", "referral", "agency"] },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "dry_run", "ready_to_send", "applied", "screened", "interviewing", "offer", "rejected", "withdrawn"]
+    },
+    "applied_at": { "type": ["string", "null"], "format": "date-time" },
+    "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "auto_sent": { "type": "boolean" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

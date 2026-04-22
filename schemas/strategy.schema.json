@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "job-search/strategy",
+  "title": "Strategy",
+  "description": "Active search strategy. Mutated only via proposals + auto-decide.",
+  "type": "object",
+  "required": ["version", "icp", "tactics", "kpis"],
+  "properties": {
+    "version": { "type": "string", "description": "e.g. v0, v1, v2" },
+    "icp": {
+      "type": "object",
+      "properties": {
+        "target_roles": { "type": "array", "items": { "type": "string" } },
+        "target_seniority": { "type": "array", "items": { "type": "string" } },
+        "target_industries": { "type": "array", "items": { "type": "string" } },
+        "target_company_sizes": { "type": "array", "items": { "type": "string" } },
+        "target_geos": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "tactics": {
+      "type": "object",
+      "properties": {
+        "daily_apply_cap": { "type": "number" },
+        "daily_scout_cap": { "type": "number" },
+        "match_threshold": { "type": "number", "minimum": 0, "maximum": 100 },
+        "channel_mix": { "type": "object", "additionalProperties": { "type": "number" } },
+        "max_changes_per_week": { "type": "number" },
+        "freshness_days": { "type": "number" }
+      },
+      "additionalProperties": true
+    },
+    "kpis": {
+      "type": "object",
+      "properties": {
+        "target_response_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "target_time_to_screen_days": { "type": "number" },
+        "target_interview_to_offer": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": true
+    },
+    "hypotheses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "statement"],
+        "properties": {
+          "id": { "type": "string" },
+          "statement": { "type": "string" },
+          "status": { "type": "string", "enum": ["open", "confirmed", "refuted", "inconclusive"] },
+          "evidence_refs": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ModelRoutingPolicy",
+  "type": "object",
+  "required": ["defaults", "workload_rules"],
+  "properties": {
+    "defaults": {
+      "type": "object",
+      "required": ["fallback_model"],
+      "properties": {
+        "model": { "type": ["string", "null"] },
+        "reasoning_effort": { "type": ["string", "null"] },
+        "allow_tools": { "type": ["boolean", "null"] },
+        "fallback_model": { "type": "string" },
+        "escalate_when": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "workload_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["match", "route"],
+        "properties": {
+          "match": {
+            "type": "object",
+            "properties": {
+              "role": { "type": "array", "items": { "type": "string" } },
+              "task_kind": { "type": "array", "items": { "type": "string" } },
+              "domain": { "type": "array", "items": { "type": "string" } }
+            },
+            "additionalProperties": true
+          },
+          "route": {
+            "type": "object",
+            "properties": {
+              "mode": { "type": ["string", "null"] },
+              "model": { "type": ["string", "null"] },
+              "reasoning_effort": { "type": ["string", "null"] },
+              "allow_tools": { "type": ["boolean", "null"] },
+              "fallback_model": { "type": ["string", "null"] },
+              "escalate_when": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
