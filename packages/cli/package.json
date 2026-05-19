@@ -1,0 +1,12 @@
+{
+  "name": "@job-search/cli",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "js": "./bin.ts"
+  },
+  "scripts": {
+    "build": "node -e \"console.log('cli: source-only package')\"",
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

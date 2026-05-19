@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "../../.cache/types/cli"
+  },
+  "references": [
+    { "path": "../core" },
+    { "path": "../db" },
+    { "path": "../mcp-server" },
+    { "path": "../runtime" }
+  ],
+  "include": [
+    "*.ts"
+  ]
+}

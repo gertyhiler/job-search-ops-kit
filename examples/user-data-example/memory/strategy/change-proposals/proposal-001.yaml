@@ -1,0 +1,18 @@
+{
+  "id": "proposal-001",
+  "ts": "2026-04-22T07:00:00Z",
+  "before": {
+    "match_threshold": 72
+  },
+  "after": {
+    "match_threshold": 75
+  },
+  "rationale": "Synthetic baseline raises the threshold after initial weak matches.",
+  "evidence_refs": ["memory/performance/weekly-summary.yaml"],
+  "expected_impact": "Higher interview conversion with lower application volume.",
+  "confidence": 0.68,
+  "reversibility": "trivial",
+  "proposed_by": "strategist",
+  "decision": "auto_accept",
+  "applied_version": "v1"
+}

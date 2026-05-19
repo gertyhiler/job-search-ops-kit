@@ -1,0 +1,41 @@
+{
+  "version": "v0",
+  "icp": {
+    "target_roles": ["Platform Engineer", "Backend Engineer"],
+    "target_seniority": ["senior"],
+    "target_industries": ["B2B SaaS", "Developer Tools"],
+    "target_company_sizes": ["startup", "scale-up", "mid-market"],
+    "target_geos": ["remote", "EU", "UK"]
+  },
+  "tactics": {
+    "daily_apply_cap": 4,
+    "daily_scout_cap": 30,
+    "match_threshold": 72,
+    "channel_mix": {
+      "hh": 0.4,
+      "site": 0.4,
+      "linkedin": 0.2
+    },
+    "max_changes_per_week": 2,
+    "freshness_days": 7
+  },
+  "kpis": {
+    "target_response_rate": 0.15,
+    "target_time_to_screen_days": 10,
+    "target_interview_to_offer": 0.25
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "Platform-heavy resume framing improves response rate for infrastructure roles.",
+      "status": "open",
+      "evidence_refs": []
+    },
+    {
+      "id": "H2",
+      "statement": "Direct site applications outperform aggregator channels for higher-match roles.",
+      "status": "open",
+      "evidence_refs": []
+    }
+  ]
+}

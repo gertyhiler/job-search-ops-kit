@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "job-search/schedule-seed",
+  "title": "ScheduleSeed",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "cron", "role", "prompt_file", "dry_run", "enabled", "catchup_policy"],
+    "properties": {
+      "id": { "type": "string" },
+      "cron": { "type": "string" },
+      "role": { "type": "string" },
+      "model": { "type": ["string", "null"] },
+      "reasoning_effort": { "type": ["string", "null"] },
+      "prompt_file": { "type": "string" },
+      "mcp_profile": { "type": ["string", "null"] },
+      "dry_run": { "type": "boolean" },
+      "enabled": { "type": "boolean" },
+      "catchup_policy": {
+        "type": "string",
+        "enum": ["run_once_if_overdue", "skip_if_stale", "run_all_missed"]
+      },
+      "max_staleness_sec": { "type": ["number", "null"], "minimum": 0 }
+    },
+    "additionalProperties": true
+  }
+}

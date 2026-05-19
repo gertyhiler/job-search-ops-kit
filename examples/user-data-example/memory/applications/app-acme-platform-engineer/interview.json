@@ -1,0 +1,14 @@
+{
+  "id": "interview-app-acme-screen",
+  "application_id": "app-acme-platform-engineer",
+  "stage": "screening",
+  "scheduled_at": "2026-04-24T12:00:00Z",
+  "duration_min": 30,
+  "format": "video",
+  "notes_path": "memory/applications/app-acme-platform-engineer/interview-notes.md",
+  "verdict": null,
+  "questions_asked": [
+    "Why platform engineering?",
+    "How do you measure developer productivity?"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "app-acme-platform-engineer",
+  "vacancy_id": "vac-acme-platform-engineer",
+  "resume_version_id": "resume-backend-focus",
+  "cover_letter_id": "cover-letter-app-acme-platform-engineer",
+  "channel": "site",
+  "status": "applied",
+  "applied_at": "2026-04-22T09:15:00Z",
+  "confidence": 0.84,
+  "auto_sent": false,
+  "dry_run": false
+}

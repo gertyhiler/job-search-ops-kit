@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --experimental-strip-types .codex/hooks/session-start.ts",
+            "statusMessage": "Checking job-search operator runtime"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --experimental-strip-types .codex/hooks/stop.ts",
+            "statusMessage": "Recording job-search operator session"
+          }
+        ]
+      }
+    ]
+  }
+}

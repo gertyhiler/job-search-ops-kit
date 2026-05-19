@@ -12,12 +12,28 @@
     "channel": { "type": "string", "enum": ["hh", "site", "linkedin", "referral", "agency"] },
     "status": {
       "type": "string",
-      "enum": ["draft", "dry_run", "ready_to_send", "applied", "screened", "interviewing", "offer", "rejected", "withdrawn"]
+      "enum": [
+        "draft",
+        "dry_run",
+        "review_blocked",
+        "ready_to_send",
+        "outbox_prepared",
+        "applied",
+        "screened",
+        "interviewing",
+        "offer",
+        "rejected",
+        "withdrawn",
+        "archived"
+      ]
     },
     "applied_at": { "type": ["string", "null"], "format": "date-time" },
     "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
     "auto_sent": { "type": "boolean" },
-    "dry_run": { "type": "boolean" }
+    "dry_run": { "type": "boolean" },
+    "last_status_reason": { "type": ["string", "null"] },
+    "last_status_evidence_ref": { "type": ["string", "null"] },
+    "last_status_human_confirmation": { "type": "boolean" }
   },
   "additionalProperties": true
 }

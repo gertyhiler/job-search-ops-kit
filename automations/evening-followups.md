@@ -8,7 +8,7 @@
 - Catchup policy: `skip_if_stale` (24 h)
 
 Output:
-- Processed entries in `user-data/memory/reviews/queue.jsonl`.
+- Processed entries in `memory/reviews/queue.jsonl` under the runtime data root.
 - Reminder messages surfaced into `today-context.md`.
 - Follow-up application events where appropriate.
 

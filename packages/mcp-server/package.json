@@ -1,0 +1,13 @@
+{
+  "name": "@job-search/mcp-server",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./service": "./service.ts"
+  },
+  "scripts": {
+    "build": "node -e \"console.log('mcp-server: dist wrapper is source-controlled')\"",
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

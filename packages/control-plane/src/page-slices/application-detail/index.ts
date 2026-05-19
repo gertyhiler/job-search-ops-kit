@@ -1,0 +1,1 @@
+export { ApplicationDetailPage } from "./page"

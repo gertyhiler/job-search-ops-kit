@@ -10,13 +10,10 @@ Thumbs.db
 .idea/
 .vscode/
 
-# ============================================================================
-# OSS / privacy guards — DO NOT commit anything below this line.
-# Private user data MUST live under user-data/, which is fully gitignored.
-# ============================================================================
-
-# User data: resume, brief, memory, evidence, runtime DB, browser profiles
+# Local dev overrides for a repo that normally stores runtime state outside the workspace
 user-data/
+runtime/
+.thinking/
 
 # Environment / secrets anywhere
 .env
@@ -29,20 +26,13 @@ user-data/
 *.db-wal
 *.db-shm
 
-# Playwright / persistent browser profiles
-runtime/browser-profiles/
-
 # Build artefacts (will appear in later milestones)
 node_modules/
+.pnpm-store/
+.cache/
+*.tsbuildinfo
 .next/
 .turbo/
 dist/
 build/
 out/
-
-# Runtime observability (audit logs kept local; schema files tracked)
-runtime/audit/*.jsonl
-runtime/audit/*.json
-runtime/health/*.json
-!runtime/audit/.gitkeep
-!runtime/health/.gitkeep

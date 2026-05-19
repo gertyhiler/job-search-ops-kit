@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "files": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/db" },
+    { "path": "./packages/cli" },
+    { "path": "./packages/mcp-server" },
+    { "path": "./packages/runtime" },
+    { "path": "./packages/browser-automation" },
+    { "path": "./tsconfig.tests.json" }
+  ]
+}

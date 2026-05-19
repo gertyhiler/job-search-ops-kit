@@ -1,0 +1,14 @@
+{
+  "basics": {
+    "name": "Alex Dev",
+    "label": "Senior Platform Engineer",
+    "summary": "Synthetic resume used to test the foundation contracts."
+  },
+  "work": [
+    {
+      "name": "Example Systems",
+      "position": "Platform Engineer",
+      "summary": "Built internal deployment tooling and observability pipelines."
+    }
+  ]
+}

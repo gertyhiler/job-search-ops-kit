@@ -1,58 +1,47 @@
-# Agent Contract — job-search-ops-kit
+# Developer Contract — job-search-ops-kit
 
-This repository is a self-hosted AI-ops kit for job search. It orchestrates agent roles (Codex CLI, Cursor) over a file-first memory layer plus a SQLite projection. Any agent acting in this repo MUST follow the contract below.
+This repository is the **developer workspace** for building `job-search-ops-kit`.
 
-## Separation of Zones
+It is not the production operator runtime.
 
-- **Zone A — system (public, git-tracked):** code, prompts, role skills, schemas, defaults, docs, automations. Lives in this repo.
-- **Zone B — user data (private, gitignored):** resume, brief, vacancies, applications, events, evidence, browser profiles, OAuth tokens. Lives in `user-data/` (resolved via `JOB_SEARCH_DATA_DIR`, default `./user-data`).
+## Workspace Role
 
-Agents MUST NOT write personal data into Zone A. Agents MUST NOT read secrets from anywhere but `user-data/.env.local` (via the env, never by hardcoding paths).
+- Use this repo for source changes, architecture work, schema work, tests, docs, `pnpm dev`, HMR, frontend debugging, and compatible backend debugging.
+- Direct CLI/script runs are allowed here when they do not depend on runtime `.agents/skills`, runtime MCP wiring, or “chat with the agent inside the operator directory” behavior.
+- Do not treat this repo as the installed operator app.
 
-## Core Concepts
+## Source vs Installed Runtime
 
-- `journal` — narrative of a working session (what happened, what was decided).
-- `events` — machine-readable lifecycle signals: `applied`, `viewed`, `screened`, `invited`, `rescheduled`, `technical`, `final`, `offer`, `rejected`, `ghosted`, `withdrawn`. Append-only in `user-data/memory/events/application-events.jsonl`.
-- `performance` — derived signals about what works (resume variants, cover letter tones, channels). Rebuilt from events, never hand-edited.
-- `strategy` — the active search strategy (ICP, tactics, KPIs, hypotheses) in `user-data/memory/strategy/active-strategy.yaml`. Mutated only through proposals + auto-decide.
-- `reviews` — follow-up queue (ping HR after N days, prep for interview the day before).
-- `evidence` — raw artefacts: JD snapshots, screenshots of apply forms, email payloads.
-- `today-context` — morning briefing generated from tracked memory (due tasks, new matches, overdue follow-ups, today's interviews). Derivable; never the source of truth.
-- `routing` — per-role, per-task model policy. Pick a model from workload and risk, not from role name alone.
+- Root `AGENTS.md` and root `.agents/skills/` are **developer-only**.
+- Production/operator skills live in source form under `operator/.agents/skills/`.
+- The installer copies those production skills into the installed operator app under `~/.local/opt/job-search`.
+- MCP-backed orchestration, runtime role execution, and production agent conversations belong in the installed operator app, not in this source repo.
+
+## External Storage Contract
+
+- App bundle: `~/.local/opt/job-search`
+- Launchers: `~/.local/bin/job-search*`
+- Config and secrets: `~/.config/job-search`
+- User memory, evidence, inbox, long-lived data: `~/.local/share/job-search`
+- Mutable runtime state, SQLite projection, browser profiles, audit, health: `~/.local/state/job-search`
+- Cache and disposable scratch: `~/.cache/job-search`
+
+The source repo may still use temporary local overrides such as repo-local `user-data/` for explicit tests or experiments, but that is not the default runtime topology anymore.
 
 ## Working Rules
 
-- Files under `user-data/memory/` are the source of truth. SQLite is an index/projection and can be rebuilt via event replay.
-- Event log is append-only. Corrections go as new events, not edits in place.
-- Every external side effect (apply, email send, browser click) MUST leave evidence in `user-data/memory/evidence/` and produce an `application_event`.
-- Any strategy change MUST flow through `propose_strategy_change` → `auto_decide_strategy` → `apply_strategy_change`. Decisions are logged in `decision-log.jsonl`; rollback is cheap and expected.
-- `dry_run: true` is the default for any new or modified automation. Promote to live only after explicit approval.
-- Rate limits apply per channel (hh, career-pages, LinkedIn). Exceeding them is a hard stop, not a warning.
-- Role prompts in `prompts/roles/` are generic and use `{{profile.*}}` / `{{strategy.*}}` placeholders. Never bake a specific person, company, or resume into a prompt.
+- Keep repo guidance compact and developer-oriented.
+- Keep runtime/operator behavior in `operator/` assets, not in always-on root instructions.
+- Never store personal job-search data in tracked source files.
+- Never wire the dev repo so that opening it implicitly becomes operator mode.
+- If a behavior needs runtime `.agents/skills`, runtime MCP config, or runtime session hooks, implement it in the installed operator app contract, not in the dev workspace contract.
 
-## Session Lifecycle
+## Key Source Locations
 
-- On session start, an agent reads `user-data/memory/profile/`, the active strategy, and the latest `today-context`.
-- On session end, the Codex/Cursor hook calls `ingest_session` → `extract_events` → `update_performance` through the `job-search` MCP server. Nothing is lost, even in interactive chat.
+- Developer-only skills: `.agents/skills/`
+- Operator runtime assets in source form: `operator/`
+- Shared prompts and policies: `prompts/`, `automations/`, `routing/`, `schemas/`, `config/defaults/`
+- Source packages: `packages/`
+- Documentation/spec: `docs/`
 
-## What Lives Where
-
-- Policy and prompts: `prompts/roles/`, `prompts/session-types/`, `routing/model-policy.yaml`, `automations/`. Edited in the IDE, reviewed by diff.
-- Contracts: `schemas/*.schema.json`. Any data written to disk or DB must validate against them.
-- Agent role skills (loadable modes): `.agents/skills/<role>/SKILL.md`.
-- Scripts: `scripts/` (thin, deterministic; no LLM calls).
-- Runtime audit (this repo): `runtime/audit/*.jsonl` (gitignored content, only `.gitkeep` is tracked).
-- User data: `user-data/` only. Always resolved through `resolvePath(kind, name)` once `packages/core/paths.ts` lands in M2+.
-
-## Safety Rails
-
-- Never commit anything from `user-data/`, `.env*` (except `.env.example`), `*.db*`, `runtime/browser-profiles/`.
-- Never invent facts in resumes, cover letters, or answers. Reviewer role is gated against hallucinations (cross-check with `master-resume.json`).
-- Never auto-accept a strategy change with `reversibility == hard`, touching constraints/preferences, or lowering salary below the declared floor — those escalate to a human.
-
-## Scope of This Repo
-
-- IN SCOPE: the system that makes job search observable, self-hosted, and self-learning.
-- OUT OF SCOPE: anybody's personal data, CVs, tokens, or proprietary company info. If it smells personal, it belongs in `user-data/`.
-
-See [docs/README.md](docs/README.md) for the full specification.
+See [docs/README.md](docs/README.md) for the current architecture, roadmap, and installation model.

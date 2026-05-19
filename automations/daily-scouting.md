@@ -8,8 +8,8 @@
 - Catchup policy: `skip_if_stale` (12 h)
 
 Output:
-- New candidate vacancies under `user-data/memory/vacancies/`.
-- Updated `user-data/memory/dashboards/today-context.md` with "new candidates: N" and top-5 highlights.
+- New candidate vacancies under the runtime data root `memory/vacancies/`.
+- Updated `memory/dashboards/today-context.md` in the runtime data root with "new candidates: N" and top-5 highlights.
 - Optional macOS notification.
 
 Notes:

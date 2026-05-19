@@ -1,0 +1,15 @@
+{
+  "name": "@job-search/db",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./database": "./database.ts",
+    "./replay": "./replay.ts",
+    "./schema": "./schema.ts"
+  },
+  "scripts": {
+    "build": "node -e \"console.log('db: source-only package')\"",
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

@@ -1,6 +1,6 @@
 # First Brief Template
 
-Fill this in and save it as `user-data/brief.md`. The `js init` wizard uses it to generate the initial profile and strategy v0.
+Fill this in and save it as `~/.local/share/job-search/brief.md` (or the configured data root equivalent). The later app onboarding flow and CLI fallback use it to generate the initial profile and strategy v0.
 
 ## Location and Work Mode
 

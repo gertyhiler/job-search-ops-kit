@@ -1,34 +1,58 @@
 # job-search-ops-kit
 
-Self-hosted AI-ops kit for job search. Agent roles (scout, tailor, reviewer, applier, strategist, interviewer, memory-manager, analyst, negotiator, support) orchestrate over a file-first memory layer and a SQLite projection. A Next.js 16 dashboard and a CLI/TUI (Ink) sit on top. Designed to be observable, self-learning, and strictly privacy-respecting.
+Self-hosted AI-ops kit for job search with a hard split between:
+
+- a **developer workspace** (this repo), and
+- an **installed operator runtime** at `~/.local/opt/job-search`.
+
+The source repo is for code/spec work, `pnpm dev`, HMR, tests, `pnpm run control-plane:dev`, and developer-only skills. The installed operator runtime is for MCP-backed orchestration, production `.agents/skills`, role execution, the shipped Next.js control plane, and “chat with the agent inside the directory” behavior.
+
+## Codex-first Orchestration (Current Direction)
+
+The installed operator runtime is designed to be operated **from the Codex app**:
+
+- open `~/.local/opt/job-search` in Codex,
+- chat-first workflow orchestrates skills + MCP tools + hooks,
+- first-run onboarding is handled by the installed `onboarding` skill plus MCP tools (`get_operator_status`, `bootstrap_operator`, `write_onboarding_profile`, `write_session_log`),
+- the Next.js control plane is a supporting surface for observation and supervised confirmations (not the primary orchestrator),
+- full unattended automation is a later milestone after the human-in-the-loop flow is proven.
+
+## Runtime Layout
+
+- app bundle: `~/.local/opt/job-search`
+- launchers: `~/.local/bin/job-search*`
+- config and secrets: `~/.config/job-search`
+- user memory, evidence, inbox: `~/.local/share/job-search`
+- mutable runtime state, DB, browser profiles, audit: `~/.local/state/job-search`
+- cache: `~/.cache/job-search`
 
 ## Status
 
-Milestone 1 — normalised skeleton. Public zone (prompts, skills, schemas, routing, automations, docs) is in place. Application code (`packages/*`) arrives from Milestone 3 onward. See [docs/implementation-roadmap.md](docs/implementation-roadmap.md).
+The source-form foundation already exists: core path/bootstrap helpers, SQLite schema/migrations, deterministic replay, technical CLI, prompts, schemas, defaults, synthetic fixtures, the operator bundle pipeline, the M5 control plane/application loop, and the M6 Codex-first onboarding foundation. The active roadmap is now rebaselined around dev/operator separation and the installed runtime workflow. See [docs/current-status.md](docs/current-status.md) and [docs/implementation-roadmap.md](docs/implementation-roadmap.md).
 
 ## Quick Map
 
 - [docs/README.md](docs/README.md) — documentation index.
-- [docs/functional-spec.md](docs/functional-spec.md) — what the system does.
-- [docs/architecture.md](docs/architecture.md) — how it fits together.
-- [docs/tech-stack.md](docs/tech-stack.md) — pinned stack.
-- [docs/database-schema.md](docs/database-schema.md) — entities and event sourcing.
-- [docs/self-learning.md](docs/self-learning.md) — autonomous strategy consolidation.
-- [docs/privacy.md](docs/privacy.md) — zones, leak guards, generic-by-default invariants.
-- [docs/getting-started.md](docs/getting-started.md) — onboarding (stub until `js init` lands).
-- [AGENTS.md](AGENTS.md) — the contract every agent operating in this repo follows.
+- [docs/current-status.md](docs/current-status.md) — what is already implemented and what the new milestone sequence is.
+- [docs/functional-spec.md](docs/functional-spec.md) — system behavior and environment boundaries.
+- [docs/architecture.md](docs/architecture.md) — developer repo vs installed operator runtime architecture.
+- [docs/getting-started.md](docs/getting-started.md) — current developer flow and operator install/update flow.
+- [docs/codex-first.md](docs/codex-first.md) — chat-first operator workflow in the Codex app.
+- [docs/privacy.md](docs/privacy.md) — storage and leak-guard policy.
+- [AGENTS.md](AGENTS.md) — developer-only contract for this repo.
+- [operator/AGENTS.md](operator/AGENTS.md) — production/operator contract in source form.
 
 ## Key Principles
 
-- **Two zones.** Public system code lives in this repo; personal data lives only in `user-data/` (gitignored). A fresh `git clone` never contains personal information.
-- **Files are the source of truth.** SQLite is a projection that can be rebuilt from `user-data/memory/events/*.jsonl` + file memory.
-- **Autonomous strategy.** Weekly strategist proposes changes; a deterministic MCP evaluator auto-accepts reversible low-risk ones and escalates the rest.
-- **Evidence for every side effect.** Applications, strategy changes, and agent spawns all leave auditable trails.
+- **Developer mode is not operator mode.** Opening the source repo must not implicitly become a production runtime session.
+- **Installed runtime is isolated.** Production skills, runtime AGENTS, and MCP configs are installed into a separate workspace bundle.
+- **Files are the source of truth.** Memory and events live under `~/.local/share/job-search`; the SQLite projection under `~/.local/state/job-search` is rebuildable.
+- **External state stays out of git.** Personal data, browser profiles, audit logs, and secrets are never part of the source repo.
 
 ## Credits
 
-Inspired by [santifer/career-ops](https://github.com/santifer/career-ops) (the mental prototype with loadable skill modes and batch processing) and a private learning-base pattern that informed the memory contract. Uses the [JSON Resume](https://jsonresume.org/) schema. MCP integrations include [gmen1057/headhunter-mcp-server](https://github.com/gmen1057/headhunter-mcp-server) and, optionally, [stickerdaniel/linkedin-mcp-server](https://github.com/stickerdaniel/linkedin-mcp-server).
+Inspired by [santifer/career-ops](https://github.com/santifer/career-ops) and a private learning-base pattern that informed the memory contract. Uses the [JSON Resume](https://jsonresume.org/) schema.
 
 ## License
 
-MIT (see [LICENSE](LICENSE) — added in the next commit).
+MIT (see [LICENSE](LICENSE)).

@@ -1,97 +1,51 @@
 # Database Schema
 
-Principle: **files are the source of truth (git-friendly, diff-able, human-readable); SQLite is a projection for fast queries and the dashboard**. Recovery is always from files.
+The SQLite DB is the rebuildable projection layer for the installed operator runtime.
 
-## Entities (SQLite)
+## Location
 
-The canonical location will be `packages/db/schema.ts` (Drizzle) from M3 onward. Schemas in `schemas/*.schema.json` are the portable JSON Schema contracts that these tables must conform to.
+Canonical default location:
 
-### `vacancy`
-- `id` (string, PK), `source` (hh | linkedin | site | referral | agency | other), `source_id`, `url`
-- `company`, `title`, `location`, `remote` (remote | onsite | hybrid | unknown)
-- `salary_min`, `salary_max`, `currency`
-- `tags[]`, `jd_markdown_path`
-- `match_score` (0–100), `match_rationale`
-- `status` (candidate | archived | applied | dropped)
-- `first_seen_at`
+- `~/.local/state/job-search/job-search.db`
 
-### `application`
-- `id`, `vacancy_id`, `resume_version_id?`, `cover_letter_id?`
-- `channel` (hh | site | linkedin | referral | agency)
-- `status` (draft | dry_run | ready_to_send | applied | screened | interviewing | offer | rejected | withdrawn)
-- `applied_at?`, `confidence?`, `auto_sent` (bool), `dry_run` (bool)
+This is intentionally outside the source repo and outside the long-lived user data root.
 
-### `application_event`
-- `id`, `application_id`, `ts`, `kind`
-- kind ∈ { applied, apply_failed, viewed, screened, invited, rescheduled, technical, final, offer, rejected, ghosted, withdrawn }
-- `payload?`, `evidence_ref?`, `emitted_by?`
+## File → DB Projection
 
-### `resume_version`
-- `id`, `slug`, `base_commit_sha`
-- `patches_json_path?`, `rendered_pdf_path?`
-- `targeted_domain?`, `created_at`
+Source-of-truth files under `~/.local/share/job-search` project into SQLite as follows:
 
-### `cover_letter`
-- `id`, `application_id`, `style?`, `tone?`, `markdown`, `sha`, `generated_by_model?`
-
-### `interview`
-- `id`, `application_id`, `stage` (screening | technical | behavioral | system-design | final | other)
-- `scheduled_at`, `duration_min?`, `format?` (onsite | video | phone | async-task)
-- `notes_path?`, `verdict?` (pass | fail | borderline | withdrawn), `questions_asked[]`
-
-### `strategy_change`
-- `id`, `ts`, `before`, `after`
-- `rationale`, `evidence_refs[]`, `expected_impact?`
-- `confidence` (0–1), `reversibility` (trivial | moderate | hard)
-- `proposed_by`, `decision` (auto_accept | auto_defer | auto_reject | escalate_to_human | reverted)
-- `applied_version?`
-
-### `agent_run`
-- `id`, `ts_started`, `ts_finished?`, `scheduled_for?`
-- `role`, `model`, `prompt_sha`, `schedule_id?`
-- `runner_adapter`, `run_mode` (background | supervised | interactive_external | script_only)
-- `routing_decision_ref?` or inline routed fields (`reasoning_effort`, `allow_tools`, `fallback_model`)
-- `exit_code?`, `duration_ms?`, `tool_calls_count?`, `changed_paths[]`
-- `pty_session_id?`, `approval_state?`, `escalation_reason?`, `capabilities_used[]`
-- `dry_run` (bool), `catchup` (bool)
-- `trigger` (boot | sweep | manual | cli | session_hook)
-- `notes_path?`
-
-### `schedule`
-- `id`, `cron`, `role`, `model?`, `prompt_file`, `mcp_profile?`
-- `dry_run` (bool), `enabled` (bool)
-- `next_run_at`, `last_run_at?`, `last_status?`
-- `catchup_policy` (run_once_if_overdue | skip_if_stale | run_all_missed)
-- `max_staleness_sec?`, `fails_in_a_row`
-
-## Events Log (Source of Truth)
-
-`user-data/memory/events/application-events.jsonl` is append-only. SQLite `application_event` rows and derived `vacancy` / `application` status are populated by the deterministic `ingest_events` script (replay). Correcting history = emit a new event, never edit an old one.
-
-## File ↔ Table Mapping (Cheat Sheet)
-
-| DB Table | File(s) (`user-data/memory/`) |
+| DB Table | File source |
 |---|---|
-| `vacancy` | `vacancies/<slug>.md` |
-| `application` | `applications/<id>/{resume.pdf,letter.md,answers.md}` |
-| `application_event` | `events/application-events.jsonl` (SSoT) |
-| `resume_version` | `resumes/variants/<slug>.json`, `resumes/renders/<slug>.pdf` |
-| `cover_letter` | `applications/<id>/letter.md` |
-| `interview` | `interviews/<app-id>-<date>.md` |
-| `strategy_change` | `strategy/change-proposals/<id>.yaml` + `strategy/decision-log.jsonl` |
-| `schedule` | seed from `config/defaults/schedules.seed.yaml`; runtime only in DB |
-| `agent_run` | `runtime/audit/agent_runs.jsonl` mirror |
+| `vacancy` | `memory/vacancies/*.json` |
+| `application` | `memory/applications/*/application.json` |
+| `application_event` | `memory/events/*.jsonl` |
+| `resume_version` | `memory/resumes/variants/*.json` |
+| `cover_letter` | `memory/applications/*/cover-letter.json` |
+| `interview` | `memory/applications/*/interview.json` |
+| `strategy_change` | `memory/strategy/change-proposals/*.yaml` + `memory/strategy/decision-log.jsonl` |
 
-## Live Supervision Notes
+M5.2 application package assets that remain file-backed:
 
-For long-running supervised runs, the app may keep ephemeral process state (PTY handle, live approval prompt, browser attachment status) in memory or a local runtime registry. Durable audit still anchors on `agent_run`, which records how the run was launched, what capabilities it used, and why it escalated.
+| Asset | File source |
+|---|---|
+| letter markdown | `memory/applications/*/letter.md` |
+| screening answers | `memory/applications/*/answers.md` |
+| resume variant ref | `memory/applications/*/resume-variant-ref.json` |
+| reviewer verdict | `memory/applications/*/reviewer-verdict.json` |
+| manual outbox | `memory/applications/*/outbox.json` |
 
-## Recovery
+State-owned runtime inputs:
 
-```
-rm user-data/runtime/job-search.db
-js db migrate
-js db replay          # scans events/*.jsonl + file memory, rebuilds rows
-```
+| DB / state surface | Source |
+|---|---|
+| `agent_run` | `~/.local/state/job-search/audit/agent_runs.jsonl` mirror |
+| `schedule` | seeded from `config/defaults/schedules.seed.yaml`, then runtime-managed |
 
-The replay is deterministic and idempotent. It must produce the same DB state for the same inputs.
+## Invariants
+
+- The DB contains no unique truth.
+- File memory stays authoritative.
+- `schedule` is runtime state.
+- `agent_run` is observability state.
+- `applied` requires explicit human confirmation and evidence; the event log remains authoritative for funnel history.
+- DB loss is recoverable through migrate + replay.

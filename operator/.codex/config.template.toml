@@ -1,0 +1,17 @@
+[mcp_servers.job-search]
+command = "node"
+args = ["__JOB_SEARCH_APP_ROOT__/packages/mcp-server/dist/index.js"]
+
+[mcp_servers.job-search.env]
+JOB_SEARCH_APP_ROOT = "__JOB_SEARCH_APP_ROOT__"
+JOB_SEARCH_CONFIG_DIR = "__JOB_SEARCH_CONFIG_DIR__"
+JOB_SEARCH_DATA_DIR = "__JOB_SEARCH_DATA_DIR__"
+JOB_SEARCH_STATE_DIR = "__JOB_SEARCH_STATE_DIR__"
+JOB_SEARCH_CACHE_DIR = "__JOB_SEARCH_CACHE_DIR__"
+
+[mcp_servers.browser-attended]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest", "--attach"]
+
+[mcp_servers.browser-attended.env]
+BROWSER_PROFILES_DIR = "__JOB_SEARCH_STATE_DIR__/browser-profiles"
