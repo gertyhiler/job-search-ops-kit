@@ -1,4 +1,0 @@
-This fixture contains only synthetic, non-sensitive placeholders.
-Use docs/first-brief-template.md for onboarding questions.
-JOB_SEARCH_DATA_DIR=/tmp/job-search-data
-HH_CLIENT_SECRET=replace-me

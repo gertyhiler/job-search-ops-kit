@@ -1,9 +1,0 @@
-{
-  "id": "cover-letter-app-acme-platform-engineer",
-  "application_id": "app-acme-platform-engineer",
-  "style": "concise",
-  "tone": "direct",
-  "markdown": "I build platform tooling, observability, and delivery automation for product teams.",
-  "sha": "abc123def456",
-  "generated_by_model": "gpt-5.4-mini"
-}

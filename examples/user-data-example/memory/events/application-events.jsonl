@@ -1,2 +1,0 @@
-{"id":"event-001","application_id":"app-acme-platform-engineer","ts":"2026-04-22T09:15:00Z","kind":"applied","payload":{"channel":"site"},"evidence_ref":"memory/evidence/acme-apply-confirmation.txt","emitted_by":"applier"}
-{"id":"event-002","application_id":"app-acme-platform-engineer","ts":"2026-04-23T10:00:00Z","kind":"screened","payload":{"source":"email"},"evidence_ref":"memory/evidence/acme-screening-email.txt","emitted_by":"memory-manager"}

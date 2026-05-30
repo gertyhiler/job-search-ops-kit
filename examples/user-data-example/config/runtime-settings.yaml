@@ -1,9 +1,0 @@
-{
-  "selected_runner_adapter": "codex-cli",
-  "default_run_mode": "supervised",
-  "approvals_policy": "ask",
-  "browser_supervision": {
-    "prefer_supervised": true,
-    "fallback_to_external": true
-  }
-}

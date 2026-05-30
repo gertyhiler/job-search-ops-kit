@@ -1,1 +1,0 @@
-export { ApplicationDetailPage } from "./page"

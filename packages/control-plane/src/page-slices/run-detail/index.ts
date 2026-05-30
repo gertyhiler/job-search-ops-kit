@@ -1,1 +1,0 @@
-export { RunDetailPage } from "./page"
