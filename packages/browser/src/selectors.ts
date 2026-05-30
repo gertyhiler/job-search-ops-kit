@@ -16,6 +16,9 @@ export const HH = {
   ],
   loginText: ["Войти", "Вход", "Авторизуйтесь"],
   authCookieName: "hhtoken",
+  /** Guest sessions also get hhtoken; role distinguishes anonymous vs logged-in. */
+  authRoleCookieName: "hhrole",
+  authApplicantRole: "applicant",
   coverLetterToggleText: [
     "Сопроводительное письмо",
     "Добавить сопроводительное",

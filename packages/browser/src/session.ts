@@ -1,7 +1,7 @@
 import path from "node:path";
 import { ensureDir } from "@job-search/core";
 import { closeQuietly, launchContext } from "./browser.ts";
-import { HH } from "./selectors.ts";
+import { isAuthenticated } from "./failure-detection.ts";
 
 export interface LoginBootstrapOptions {
   storageStatePath: string;
@@ -40,10 +40,7 @@ export async function loginBootstrap(
 
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
-      const cookies = await context.cookies();
-      if (
-        cookies.some((c) => c.name === HH.authCookieName && Boolean(c.value))
-      ) {
+      if (await isAuthenticated(page)) {
         await context.storageState({ path: opts.storageStatePath });
         status("Authenticated. Session state saved.");
         return {

@@ -17,7 +17,11 @@ async function bodyTextIncludes(
 
 export async function isAuthenticated(page: Page): Promise<boolean> {
   const cookies = await page.context().cookies();
-  return cookies.some((c) => c.name === HH.authCookieName && Boolean(c.value));
+  const hasToken = cookies.some(
+    (c) => c.name === HH.authCookieName && Boolean(c.value),
+  );
+  const role = cookies.find((c) => c.name === HH.authRoleCookieName)?.value;
+  return hasToken && role === HH.authApplicantRole;
 }
 
 export async function detectAlreadyApplied(page: Page): Promise<boolean> {
