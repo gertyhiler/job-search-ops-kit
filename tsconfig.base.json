@@ -1,12 +1,17 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2023",
+    "lib": ["ES2023"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "moduleDetection": "force",
     "strict": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": false,
     "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "types": ["node"]
   }

@@ -1,0 +1,19 @@
+# Auto-apply policy. The pipeline NEVER submits unless mode is "real".
+version: 1
+
+# "dry_run" simulates the whole apply flow without submitting.
+# "real" submits when a vacancy passes every gate below.
+mode: dry_run
+
+# Scoring gates (0-100).
+fitScoreMin: 60
+riskScoreMax: 40
+salaryFloor: null
+
+# Volume limits (safety / reputation).
+maxAutoApplicationsPerDay: 50
+maxApplicationsPerCompanyPer30Days: 2
+maxFailedAttemptsPerPlaybookBeforeDisable: 5
+
+# Vacancies above this priority go to manual_review instead of auto-apply.
+highValuePriorityMin: 85

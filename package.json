@@ -1,30 +1,63 @@
 {
   "name": "job-search-ops-kit",
-  "private": true,
   "version": "0.1.0",
+  "private": true,
   "type": "module",
   "packageManager": "pnpm@10.33.0",
   "engines": {
     "node": ">=22.6.0"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "bin": {
+    "job-search": "apps/cli/bin.ts"
+  },
   "scripts": {
-    "control-plane:dev": "pnpm --dir packages/control-plane dev",
-    "guard:privacy": "node scripts/privacy-guard.mjs --tracked",
-    "validate": "pnpm run validate:foundation",
-    "validate:foundation": "node scripts/validate-foundation.mjs",
-    "db:migrate": "node --experimental-strip-types packages/cli/bin.ts db migrate",
-    "db:replay": "node --experimental-strip-types packages/cli/bin.ts db replay",
-    "build:operator": "node --experimental-strip-types scripts/build-operator.ts",
-    "install:operator": "node --experimental-strip-types scripts/install-operator.ts",
-    "update:operator": "node --experimental-strip-types scripts/update-operator.ts",
-    "typecheck": "turbo run typecheck",
-    "build": "turbo run build",
-    "test": "node --experimental-strip-types --test tests/*.test.ts",
-    "check": "pnpm run guard:privacy && pnpm run validate:foundation && pnpm run test"
+    "dev": "tsx apps/service/src/bootstrap/main.ts",
+    "start": "tsx apps/service/src/bootstrap/main.ts",
+    "cli": "tsx apps/cli/bin.ts",
+    "job-search": "tsx apps/cli/bin.ts",
+    "mcp": "tsx apps/mcp/src/index.ts",
+    "search:once": "tsx apps/service/src/bootstrap/search-once.ts",
+    "score:once": "tsx apps/service/src/bootstrap/score-once.ts",
+    "package:once": "tsx apps/service/src/bootstrap/package-once.ts",
+    "apply:once": "tsx apps/service/src/bootstrap/apply-once.ts",
+    "notify:once": "tsx apps/service/src/bootstrap/notify-once.ts",
+    "db:migrate": "tsx apps/cli/bin.ts db migrate",
+    "doctor": "tsx apps/cli/bin.ts doctor",
+    "init": "tsx apps/cli/bin.ts init",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "check": "node scripts/privacy-guard.mjs --tracked && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
-    "@types/node": "^22.15.21",
-    "turbo": "^2.0.14",
-    "typescript": "^5.8.3"
+    "@job-search/browser": "workspace:*",
+    "@job-search/cli": "workspace:*",
+    "@job-search/connectors": "workspace:*",
+    "@job-search/contracts": "workspace:*",
+    "@job-search/core": "workspace:*",
+    "@job-search/db": "workspace:*",
+    "@job-search/mcp": "workspace:*",
+    "@job-search/memory": "workspace:*",
+    "@job-search/resume": "workspace:*",
+    "@job-search/scoring": "workspace:*",
+    "@job-search/service": "workspace:*",
+    "@job-search/telegram": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "@types/node": "^22.10.2",
+    "@types/node-cron": "^3.0.11",
+    "grammy": "^1.32.0",
+    "node-cron": "^3.0.3",
+    "pino": "^9.5.0",
+    "pino-pretty": "^13.0.0",
+    "playwright": "^1.49.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "yaml": "^2.6.1",
+    "zod": "^3.24.1"
   }
 }

@@ -1,0 +1,13 @@
+{
+  "name": "@job-search/connectors",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@job-search/contracts": "workspace:*",
+    "@job-search/core": "workspace:*"
+  }
+}

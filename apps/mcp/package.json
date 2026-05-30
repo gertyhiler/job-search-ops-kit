@@ -1,0 +1,19 @@
+{
+  "name": "@job-search/mcp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@job-search/connectors": "workspace:*",
+    "@job-search/contracts": "workspace:*",
+    "@job-search/core": "workspace:*",
+    "@job-search/db": "workspace:*",
+    "@job-search/memory": "workspace:*",
+    "@job-search/resume": "workspace:*",
+    "@job-search/scoring": "workspace:*",
+    "@job-search/service": "workspace:*"
+  }
+}

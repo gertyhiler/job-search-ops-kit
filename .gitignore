@@ -1,38 +1,43 @@
-# Python
-__pycache__/
-*.pyc
+# Dependencies
+node_modules/
+.pnpm-store/
 
-# macOS
-.DS_Store
+# Build output
+dist/
+build/
+out/
+*.tsbuildinfo
+.turbo/
+.cache/
 
-# OS / editor noise
-Thumbs.db
-.idea/
-.vscode/
-
-# Local dev overrides for a repo that normally stores runtime state outside the workspace
-user-data/
-runtime/
+# Local research / scratch
 .thinking/
 
-# Environment / secrets anywhere
+# User runtime data (the OSS repo ships empty; `job-search init` scaffolds this)
+data/
+
+# Secrets
 .env
 .env.*
 !.env.example
 
-# Local SQLite databases (hot mutable state)
+# SQLite
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 *.db
 *.db-journal
 *.db-wal
 *.db-shm
 
-# Build artefacts (will appear in later milestones)
-node_modules/
-.pnpm-store/
-.cache/
-*.tsbuildinfo
-.next/
-.turbo/
-dist/
-build/
-out/
+# Playwright artifacts
+test-results/
+playwright-report/
+.playwright/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,28 @@
+{
+  "$comment": "JSON-Resume-ish master record. Filled by the /init skill from your real resume. Variants live in data/resume/variants/.",
+  "basics": {
+    "name": "TODO: full name",
+    "label": "TODO: target title (e.g. Senior Frontend Engineer)",
+    "email": "TODO",
+    "phone": "",
+    "location": { "city": "TODO", "countryCode": "" },
+    "summary": "TODO: 2-3 sentence summary grounded in real experience.",
+    "profiles": []
+  },
+  "work": [
+    {
+      "company": "TODO",
+      "position": "TODO",
+      "startDate": "YYYY-MM",
+      "endDate": "YYYY-MM",
+      "location": "",
+      "highlights": ["TODO: measurable, evidence-backed achievement"]
+    }
+  ],
+  "skills": [
+    { "name": "Frontend", "keywords": ["React", "TypeScript", "Next.js"] }
+  ],
+  "education": [],
+  "languages": [],
+  "projects": []
+}

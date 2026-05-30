@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "node_modules/.bin/tsx scripts/hooks/session-start.ts",
+        "timeout": 30
+      }
+    ],
+    "stop": [
+      {
+        "command": "node_modules/.bin/tsx scripts/hooks/stop.ts",
+        "timeout": 30
+      }
+    ]
+  }
+}

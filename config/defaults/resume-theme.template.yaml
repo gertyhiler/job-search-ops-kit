@@ -1,0 +1,10 @@
+# Resume PDF theme tokens consumed by the Typst renderer (packages/resume).
+version: 1
+fontFamily: "Liberation Sans"
+fontSizePt: 10
+accentColor: "#1f4e79"
+textColor: "#1a1a1a"
+mutedColor: "#666666"
+marginCm: 1.6
+lineSpacingEm: 0.6
+sectionGapEm: 0.9

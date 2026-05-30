@@ -1,0 +1,21 @@
+# When a vacancy must be reviewed by a human instead of auto-applied.
+version: 1
+
+# Always escalate to manual_review when any of these are true.
+escalateWhen:
+  companyInTargetList: true
+  hasQuestionnaire: true
+  mentionsRelocation: true
+  mentionsCitizenshipOrVisa: true
+  mentionsSalaryNegotiationRequired: true
+  priorityAtLeast: 85
+
+# Topics that require explicit human confirmation before any answer is sent.
+sensitiveTopics:
+  - salary
+  - relocation
+  - citizenship
+  - visa
+  - taxes
+  - legal_status
+  - test_assignment

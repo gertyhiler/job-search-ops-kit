@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "job-search": {
+      "command": "npx",
+      "args": ["tsx", "apps/mcp/src/index.ts"]
+    },
+    "browser-attended": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    }
+  }
+}

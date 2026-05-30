@@ -1,0 +1,11 @@
+# Merge this into your global ~/.codex/config.toml to expose the job-search MCP
+# server (and an attended browser) to Codex. Paths assume you run Codex from the
+# repo root.
+
+[mcp_servers.job-search]
+command = "npx"
+args = ["tsx", "apps/mcp/src/index.ts"]
+
+[mcp_servers.browser-attended]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest"]
