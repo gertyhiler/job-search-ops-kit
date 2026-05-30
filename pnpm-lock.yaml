@@ -182,6 +182,9 @@ importers:
 
   packages/connectors:
     dependencies:
+      '@job-search/browser':
+        specifier: workspace:*
+        version: link:../browser
       '@job-search/contracts':
         specifier: workspace:*
         version: link:../contracts

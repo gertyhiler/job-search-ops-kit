@@ -18,7 +18,7 @@ export interface SearchReport {
 
 export async function runSearch(ctx: PipelineContext): Promise<SearchReport> {
   const strategy = loadSearchStrategy();
-  const adapters = createAdapters(ctx.env, strategy);
+  const adapters = createAdapters(ctx.env, strategy, ctx.paths);
   const report: SearchReport = { found: 0, created: 0, updated: 0 };
 
   for (const adapter of adapters) {

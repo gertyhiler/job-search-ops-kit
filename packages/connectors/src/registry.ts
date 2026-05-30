@@ -1,16 +1,17 @@
 import type { JobSourceAdapter } from "@job-search/contracts";
-import type { Env, SearchStrategy } from "@job-search/core";
+import type { Env, Paths, SearchStrategy } from "@job-search/core";
 import { HhAdapter } from "./hh/adapter.ts";
 
 /** Build all enabled source adapters. Add new boards here. */
 export function createAdapters(
   env: Env,
   strategy: SearchStrategy,
+  paths: Pick<Paths, "storageStatePath">,
 ): JobSourceAdapter[] {
+  void env;
   return [
     new HhAdapter({
-      userAgent: env.HH_USER_AGENT,
-      oauthToken: env.HH_OAUTH_TOKEN || undefined,
+      storageStatePath: paths.storageStatePath,
       strategy,
     }),
   ];

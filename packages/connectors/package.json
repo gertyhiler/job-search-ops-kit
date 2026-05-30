@@ -7,6 +7,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@job-search/browser": "workspace:*",
     "@job-search/contracts": "workspace:*",
     "@job-search/core": "workspace:*"
   }
