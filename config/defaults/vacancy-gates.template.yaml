@@ -1,0 +1,35 @@
+# Mechanical gates on normalized vacancies (first match wins).
+# Actions: pass (continue), reject, manual_review.
+# Blacklist.yaml is always applied before these rules.
+version: 1
+
+defaultAction: continue
+
+rules:
+  # Hard rejects — obvious junk / banned domains (customize in data/strategy).
+  - id: ban-gambling
+    when:
+      haystackContainsAny:
+        - gambling
+        - casino
+        - betting
+        - букмекер
+        - ставк
+    action: reject
+    reason: gambling / betting domain
+
+  - id: ban-adult
+    when:
+      haystackContainsAny:
+        - adult
+        - "18+"
+    action: reject
+    reason: adult content
+
+  # Example: escalate hybrid roles without disclosed salary (customize per candidate).
+  # - id: hybrid-unknown-salary
+  #   when:
+  #     remoteType: hybrid
+  #     salaryDisclosed: false
+  #   action: manual_review
+  #   reason: hybrid format, salary not disclosed

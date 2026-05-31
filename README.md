@@ -42,7 +42,7 @@ It ships **empty**: there is no personal data in the repo. After `git clone` you
 ## Quick start (from scratch)
 
 ```bash
-cp .env.example .env          # fill TELEGRAM_*, models, HH_USER_AGENT
+cp .env.example .env          # fill TELEGRAM_*, models, HH_PLAYWRIGHT_*
 pnpm install
 pnpm exec playwright install chromium
 

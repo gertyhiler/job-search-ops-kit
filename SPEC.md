@@ -25,8 +25,9 @@ Cron queues (interval from `POLL_INTERVAL_SEC`; downstream queues at `min(interv
 
 - **search-queue** — for each enabled connector: `fetchNewJobs(since)` -> `normalize` ->
   dedupe by content hash -> upsert (`normalized`) + events; advance source cursor.
-- **score-queue** — `normalized` -> deterministic fit/salary/risk/priority -> classify
-  apply-mode -> `scored`/`classified`.
+- **score-queue** — `normalized` -> mechanical `vacancy-gates.yaml` (+ blacklist) ->
+  optional LLM classify via `data/prompts/vacancy-scoring.md` -> apply-mode ->
+  `scored`/`classified`.
 - **package-queue** — `classified(auto)` -> select resume variant + cover template, fill
   via AI subprocess under the evidence policy -> store letter + artifacts -> `packaged`.
 - **apply-queue** — `packaged` that pass auto-apply policy -> Playwright apply
@@ -43,7 +44,7 @@ SQLite is the **system of record** for operational data:
 `source_cursors` and `telegram_messages`.
 
 Human-domain data lives as files under `data/` (gitignored): `profile/`, `strategy/`,
-`templates/`, `resume/`, `memory/`, `browser/`, `exports/`.
+`prompts/`, `templates/`, `resume/`, `memory/`, `browser/`, `exports/`.
 
 ## 4. Queue types (exceptions)
 

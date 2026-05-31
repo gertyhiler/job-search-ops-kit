@@ -1,3 +1,2 @@
-export * from "./keywords.ts";
-export * from "./score.ts";
+export * from "./gates.ts";
 export * from "./apply-gate.ts";

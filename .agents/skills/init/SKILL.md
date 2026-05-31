@@ -8,7 +8,7 @@ description: First-run onboarding. Interview the user, analyze their resume, and
 ## Purpose
 
 Turn the user's resume + a short interview into the files the deterministic pipeline
-needs: profile, strategy, evidence, and a structured master resume.
+needs: profile, strategy, evidence, classification prompt, and a structured master resume.
 
 ## When to use
 
@@ -25,7 +25,9 @@ First run, or whenever the user wants to (re)configure the system from scratch.
   `experience-facts`, `resume-gaps`.
 - `append_evidence` for supporting evidence (links, metrics, repos).
 - `write_strategy` for: `search-strategy`, `auto-apply-policy`, `manual-review-policy`,
-  `target-companies`, `blacklist`.
+  `target-companies`, `blacklist`, `vacancy-gates`.
+- `write_prompt` for: `vacancy-scoring` — the LLM classification prompt in
+  `data/prompts/vacancy-scoring.md` (role fit, applyMode, remote/hybrid rules).
 - A structured master resume: write `data/resume/master-resume.json` via the `resume` skill
   (call it after the interview) — its shape is JSON-Resume-ish.
 
@@ -39,14 +41,26 @@ First run, or whenever the user wants to (re)configure the system from scratch.
    floor/target, remote/hybrid/relocation, work authorization, undesired domains/companies,
    English level, and what is safe to say in cover letters.
 4. Write `experience-facts` as a bullet list of true FACTs; put links/metrics in evidence.
-5. Write profile/strategy files. Tune `search-strategy.queries`/`areas`/`salaryFloor` to the
-   user. Keep `auto-apply-policy.mode = dry_run` until the user explicitly enables real.
+5. Write profile/strategy files:
+   - `search-strategy`: wide mechanical funnel (queries, areas, excludeKeywords).
+   - `vacancy-gates`: mechanical rules on normalized vacancies (ban words, hybrid/salary rules).
+   - `vacancy-scoring` prompt: nuanced fit classification for LLM (roles, stacks, manual_review cases).
+   - Keep `auto-apply-policy.mode = dry_run` until the user explicitly enables real.
 6. Record anything the resume omits but the user mentioned as `propose_resume_update`.
 7. Hand off: tell the user to run `job-search hh:login`, then `pnpm dev`.
 
+## Pipeline classification flow (for context)
+
+```
+search (wide) → normalize → vacancy-gates.yaml (mechanical) → LLM (vacancy-scoring prompt) → auto / manual_review / reject
+```
+
+Mechanical gates run before LLM. Personal nuance belongs in `vacancy-gates.yaml` and the
+`vacancy-scoring` prompt — not in repository code.
+
 ## Files to read
 
-`data/profile/*`, `data/strategy/*`, `data/resume/master-resume.json`.
+`data/profile/*`, `data/strategy/*`, `data/prompts/vacancy-scoring.md`, `data/resume/master-resume.json`.
 
 ## Safety
 
@@ -55,5 +69,5 @@ real auto-apply on the user's behalf without explicit confirmation.
 
 ## Acceptance
 
-Profile, strategy and evidence files contain real, user-confirmed content (no TODO
-placeholders for anything the user actually provided), and a master resume exists.
+Profile, strategy, gates, scoring prompt and evidence files contain real, user-confirmed
+content (no TODO placeholders for anything the user actually provided), and a master resume exists.

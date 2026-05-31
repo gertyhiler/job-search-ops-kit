@@ -1,5 +1,8 @@
 import { applyToVacancy } from "@job-search/browser";
-import { loadAutoApplyPolicy } from "@job-search/core";
+import {
+  loadAutoApplyPolicy,
+  hhPlaywrightProfileFromEnv,
+} from "@job-search/core";
 import {
   countApplicationsSince,
   countApplicationsToCompanySince,
@@ -127,6 +130,7 @@ export async function runApply(
       screenshotsDir: ctx.paths.screenshotsDir,
       tracesDir: ctx.paths.tracesDir,
       headless: true,
+      profile: hhPlaywrightProfileFromEnv(ctx.env),
     });
 
     if (outcome.status === "applied") {

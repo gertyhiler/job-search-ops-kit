@@ -47,7 +47,9 @@ const STRATEGY_FILES = new Set([
   "manual-review-policy",
   "blacklist",
   "target-companies",
+  "vacancy-gates",
 ]);
+const PROMPT_FILES = new Set(["vacancy-scoring"]);
 
 function vacancySummary(row: ReturnType<typeof getVacancyById>): unknown {
   if (!row) return null;
@@ -170,7 +172,7 @@ export function buildTools(): ToolDef[] {
     {
       name: "write_strategy",
       description:
-        "Overwrite a strategy YAML file. Allowed: search-strategy, auto-apply-policy, manual-review-policy, blacklist, target-companies.",
+        "Overwrite a strategy YAML file. Allowed: search-strategy, auto-apply-policy, manual-review-policy, blacklist, target-companies, vacancy-gates.",
       inputShape: { file: z.string(), content: z.string() },
       handler: (args, ctx) => {
         const file = args.file as string;
@@ -180,6 +182,25 @@ export function buildTools(): ToolDef[] {
         writeTextFile(dest, args.content as string);
         recordEvent(ctx.db, {
           type: "strategy_written",
+          entityType: "strategy",
+          payload: { file },
+        });
+        return { ok: true, file: dest };
+      },
+    },
+    {
+      name: "write_prompt",
+      description:
+        "Overwrite a data/prompts markdown file. Allowed: vacancy-scoring.",
+      inputShape: { file: z.string(), content: z.string() },
+      handler: (args, ctx) => {
+        const file = args.file as string;
+        if (!PROMPT_FILES.has(file))
+          throw new Error(`Disallowed prompt file: ${file}`);
+        const dest = path.join(ctx.paths.dataDir, "prompts", `${file}.md`);
+        writeTextFile(dest, args.content as string);
+        recordEvent(ctx.db, {
+          type: "prompt_written",
           entityType: "strategy",
           payload: { file },
         });

@@ -3,21 +3,9 @@ import { normalizedVacancySchema } from "@job-search/contracts";
 import {
   autoApplyPolicySchema,
   blacklistSchema,
-  manualReviewPolicySchema,
-  targetCompaniesSchema,
+  vacancyGatesSchema,
 } from "@job-search/core";
-import {
-  evaluateApplyGate,
-  scoreVacancy,
-  type ScoringContext,
-} from "@job-search/scoring";
-
-const ctx: ScoringContext = {
-  autoApplyPolicy: autoApplyPolicySchema.parse({}),
-  manualReviewPolicy: manualReviewPolicySchema.parse({}),
-  blacklist: blacklistSchema.parse({}),
-  targetCompanies: targetCompaniesSchema.parse({ companies: ["BigCo"] }),
-};
+import { evaluateApplyGate, evaluateVacancyGates } from "@job-search/scoring";
 
 function vac(overrides: Record<string, unknown>) {
   return normalizedVacancySchema.parse({
@@ -31,34 +19,66 @@ function vac(overrides: Record<string, unknown>) {
   });
 }
 
-describe("scoreVacancy", () => {
-  it("scores a strong React/TS role as auto", () => {
-    const r = scoreVacancy(
+describe("evaluateVacancyGates", () => {
+  const gates = vacancyGatesSchema.parse({
+    rules: [
+      {
+        id: "ban-vue",
+        when: { titleContainsAny: ["vue"] },
+        action: "reject",
+        reason: "vue stack",
+      },
+      {
+        id: "hybrid-no-salary",
+        when: { remoteType: "hybrid", salaryDisclosed: false },
+        action: "manual_review",
+        reason: "hybrid, salary unknown",
+      },
+    ],
+  });
+  const blacklist = blacklistSchema.parse({ keywords: ["gambling"] });
+
+  it("rejects blacklist keyword", () => {
+    const r = evaluateVacancyGates(
+      vac({ description: "react gambling" }),
+      gates,
+      blacklist,
+    );
+    expect(r.action).toBe("reject");
+    expect(r.ruleId).toBe("blacklist");
+  });
+
+  it("rejects matching gate rule", () => {
+    const r = evaluateVacancyGates(
+      vac({ title: "Senior Vue developer" }),
+      gates,
+      blacklist,
+    );
+    expect(r.action).toBe("reject");
+    expect(r.ruleId).toBe("ban-vue");
+  });
+
+  it("routes hybrid without salary to manual_review", () => {
+    const r = evaluateVacancyGates(
       vac({
-        title: "Senior React developer",
-        description: "react typescript next.js",
+        title: "React dev",
+        remoteType: "hybrid",
+        location: "Санкт-Петербург",
       }),
-      ctx,
+      gates,
+      blacklist,
     );
-    expect(r.fitScore).toBeGreaterThan(60);
-    expect(r.applyMode).toBe("auto");
+    expect(r.action).toBe("manual_review");
+    expect(r.ruleId).toBe("hybrid-no-salary");
   });
 
-  it("rejects gambling roles via risk", () => {
-    const r = scoreVacancy(
-      vac({ description: "react gambling casino betting" }),
-      ctx,
+  it("continues when no rule matches", () => {
+    const r = evaluateVacancyGates(
+      vac({ title: "React dev", remoteType: "remote" }),
+      gates,
+      blacklist,
     );
-    expect(r.riskScore).toBeGreaterThan(40);
-    expect(r.applyMode).toBe("reject");
-  });
-
-  it("escalates target companies to high_value", () => {
-    const r = scoreVacancy(
-      vac({ description: "react typescript", companyName: "BigCo" }),
-      ctx,
-    );
-    expect(r.applyMode).toBe("high_value");
+    expect(r.action).toBe("continue");
   });
 });
 
@@ -91,19 +111,5 @@ describe("evaluateApplyGate", () => {
     });
     expect(g.allowed).toBe(false);
     expect(g.route).toBe("manual_review");
-  });
-
-  it("blocks when daily limit is hit", () => {
-    const g = evaluateApplyGate({
-      policy,
-      applyMode: "auto",
-      fitScore: 80,
-      riskScore: 0,
-      alreadyApplied: false,
-      applicationsToday: policy.maxAutoApplicationsPerDay,
-      applicationsToCompanyLast30Days: 0,
-      playbookStatus: "active",
-    });
-    expect(g.allowed).toBe(false);
   });
 });

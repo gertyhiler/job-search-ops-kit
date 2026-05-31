@@ -26,7 +26,7 @@ You MUST NOT hand-edit anything under `data/memory/`, the SQLite database, or an
 event/journal file. All writes to system state go through the CLI or MCP tools, which
 validate input. This keeps memory deterministic and auditable.
 
-- To write profile/strategy: `write_profile`, `write_strategy`, `append_evidence`.
+- To write profile/strategy: `write_profile`, `write_strategy`, `write_prompt`, `append_evidence`.
 - To record something: `log_event`, `create_application_note`, `enqueue`.
 - To suggest a resume change: `propose_resume_update`.
 - To read state: `list_vacancies`, `get_vacancy`, `get_funnel`, `next_actions`,

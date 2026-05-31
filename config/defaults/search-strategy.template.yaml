@@ -1,38 +1,38 @@
-# Search strategy for the deterministic search pipeline.
-# Edit freely; the search-queue reads this on every poll.
+# Wide mechanical search funnel. Tune queries/areas in /init or via write_strategy.
 version: 1
 
-# HH text queries. Each is searched independently.
 queries:
+  - "frontend"
   - "frontend developer"
   - "react developer"
-  - "typescript developer"
-  - "senior frontend"
-  - "frontend engineer"
-  - "react typescript"
-  - "fullstack frontend"
+  - "next.js"
+  - "typescript"
+  - "nodejs developer"
+  - "node.js"
+  - "fullstack"
+  - "fullstack developer"
+  - "tech lead"
+  - "team lead"
+  - "CTO"
+  - "co-founder"
+  - "AI engineer"
+  - "e-commerce"
 
-# HH area ids. 113 = Russia, 1 = Moscow, 2 = Saint Petersburg.
+# HH area ids: 113 Russia, 40 Kazakhstan, 16 Belarus, 1 Moscow, 2 SPb.
 areas:
   - 113
+  - 40
+  - 16
 
-# Remote / schedule preferences (HH "schedule" ids: remote, flexible, fullDay).
-schedule:
-  - remote
-  - flexible
+# Empty = no HH schedule filter (widest funnel). Narrow in vacancy-gates or AI prompt.
+schedule: []
 
-# Only keep vacancies at or above this monthly gross floor (in RUB). null = no floor.
-salaryFloor: null
+experience: null
 
-# Max vacancies pulled per query per poll.
-perQueryLimit: 50
+perQueryLimit: 100
 
-# Drop vacancies whose title/description matches any of these (case-insensitive).
+# Title-only ban at search time. Full text bans live in blacklist.yaml + vacancy-gates.yaml.
 excludeKeywords:
   - "стажер"
   - "intern"
-  - "1c"
-  - "битрикс"
-
-# Experience filter (HH ids): noExperience, between1And3, between3And6, moreThan6. null = any.
-experience: null
+  - "junior"

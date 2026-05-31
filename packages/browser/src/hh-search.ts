@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import type { SearchStrategy } from "@job-search/core";
+import type { PlaywrightProfile, SearchStrategy } from "@job-search/core";
 import { closeQuietly, launchContext } from "./browser.ts";
 import { detectCaptcha, isAuthenticated } from "./failure-detection.ts";
 import { parseVacancyPageHtml } from "./parse-vacancy-page.ts";
@@ -49,6 +49,7 @@ export interface HhSearchScrapeOptions {
   since: Date | null;
   detailDelayMs?: number;
   headless?: boolean;
+  profile?: PlaywrightProfile;
 }
 
 interface ShardsSearchResponse {
@@ -111,6 +112,7 @@ export async function scrapeHhVacancies(
   const { browser, context } = await launchContext({
     storageStatePath: opts.storageStatePath,
     headless: opts.headless ?? true,
+    profile: opts.profile,
   });
 
   try {

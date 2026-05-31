@@ -14,10 +14,24 @@ const envSchema = z.object({
   AI_MAX_RETRIES: z.coerce.number().int().min(0).default(1),
   TELEGRAM_BOT_TOKEN: z.string().default(""),
   TELEGRAM_CHAT_ID: z.string().default(""),
-  HH_USER_AGENT: z.string().default("job-search-ops-kit/0.1"),
-  HH_CLIENT_ID: z.string().default(""),
-  HH_CLIENT_SECRET: z.string().default(""),
-  HH_OAUTH_TOKEN: z.string().default(""),
+  /** Playwright context defaults. Empty USER_AGENT = Desktop Chrome at runtime. */
+  PLAYWRIGHT_USER_AGENT: z.string().default(""),
+  PLAYWRIGHT_LOCALE: z.string().default("en-US"),
+  PLAYWRIGHT_VIEWPORT_WIDTH: z.coerce.number().int().positive().default(1280),
+  PLAYWRIGHT_VIEWPORT_HEIGHT: z.coerce.number().int().positive().default(720),
+  /** HH flows (search / apply / hh:login). Independent from PLAYWRIGHT_*. */
+  HH_PLAYWRIGHT_USER_AGENT: z.string().default(""),
+  HH_PLAYWRIGHT_LOCALE: z.string().default("ru-RU"),
+  HH_PLAYWRIGHT_VIEWPORT_WIDTH: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(1280),
+  HH_PLAYWRIGHT_VIEWPORT_HEIGHT: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(900),
   AUTO_APPLY_MODE: z.enum(["dry_run", "real"]).default("dry_run"),
   TYPST_BIN: z.string().default("typst"),
   CONSOLIDATION_EVENT_THRESHOLD: z.coerce.number().int().positive().default(25),

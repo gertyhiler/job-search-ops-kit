@@ -4,7 +4,7 @@ import type {
   ApplyOutcome,
   QueueType,
 } from "@job-search/contracts";
-import { ensureDir } from "@job-search/core";
+import { ensureDir, type PlaywrightProfile } from "@job-search/core";
 import type { Locator, Page } from "playwright";
 import { closeQuietly, launchContext } from "./browser.ts";
 import {
@@ -27,6 +27,7 @@ export interface ApplyInput {
   tracesDir: string;
   headless?: boolean;
   timeoutMs?: number;
+  profile?: PlaywrightProfile;
 }
 
 const ERROR_QUEUE: Record<ApplyErrorType, QueueType | null> = {
@@ -116,6 +117,7 @@ export async function applyToVacancy(input: ApplyInput): Promise<ApplyOutcome> {
   const { browser, context } = await launchContext({
     storageStatePath: input.storageStatePath,
     headless: input.headless ?? true,
+    profile: input.profile,
   });
 
   let tracingStarted = false;

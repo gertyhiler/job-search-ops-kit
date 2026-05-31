@@ -5,6 +5,7 @@ import {
   loadResumeTheme,
   readJsonFileOr,
   resolvePaths,
+  hhPlaywrightProfileFromEnv,
 } from "@job-search/core";
 import {
   getFunnel,
@@ -46,9 +47,10 @@ function envPaths(): {
 }
 
 export async function hhLogin(): Promise<void> {
-  const { paths } = envPaths();
+  const { env, paths } = envPaths();
   const result = await loginBootstrap({
     storageStatePath: paths.storageStatePath,
+    profile: hhPlaywrightProfileFromEnv(env),
     onStatus: (m) => console.log(m),
   });
   console.log(result.message);

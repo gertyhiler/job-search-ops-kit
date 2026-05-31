@@ -4,7 +4,7 @@ import type {
   RawVacancy,
 } from "@job-search/contracts";
 import { scrapeHhVacancies } from "@job-search/browser";
-import type { SearchStrategy } from "@job-search/core";
+import type { SearchStrategy, PlaywrightProfile } from "@job-search/core";
 import { mapWebToHhDetail } from "./map-web.ts";
 import type { HhVacancyDetail } from "./client.ts";
 import { normalizeHhVacancy } from "./normalize.ts";
@@ -14,6 +14,7 @@ export interface HhAdapterOptions {
   strategy: SearchStrategy;
   detailDelayMs?: number;
   maxPagesPerQuery?: number;
+  profile?: PlaywrightProfile;
 }
 
 export class HhAdapter implements JobSourceAdapter {
@@ -31,6 +32,7 @@ export class HhAdapter implements JobSourceAdapter {
       strategy: this.#opts.strategy,
       since,
       detailDelayMs: this.#opts.detailDelayMs,
+      profile: this.#opts.profile,
     });
     return web.map((item) => mapWebToHhDetail(item) as unknown as RawVacancy);
   }

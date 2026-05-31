@@ -53,6 +53,35 @@ export const blacklistSchema = z.object({
 });
 export type Blacklist = z.infer<typeof blacklistSchema>;
 
+const gateRuleWhenSchema = z.object({
+  titleContainsAny: z.array(z.string()).optional(),
+  descriptionContainsAny: z.array(z.string()).optional(),
+  haystackContainsAny: z.array(z.string()).optional(),
+  haystackContainsAll: z.array(z.string()).optional(),
+  companyContainsAny: z.array(z.string()).optional(),
+  keySkillsContainsAny: z.array(z.string()).optional(),
+  remoteType: z.union([z.string(), z.array(z.string())]).optional(),
+  locationContainsAny: z.array(z.string()).optional(),
+  salaryDisclosed: z.boolean().optional(),
+  salaryRubGte: z.number().optional(),
+  salaryRubLt: z.number().optional(),
+});
+
+export const vacancyGateRuleSchema = z.object({
+  id: z.string().min(1),
+  when: gateRuleWhenSchema.optional(),
+  action: z.enum(["pass", "reject", "manual_review"]),
+  reason: z.string().optional(),
+});
+
+export const vacancyGatesSchema = z.object({
+  version: z.number().default(1),
+  defaultAction: z.enum(["continue", "reject"]).default("continue"),
+  rules: z.array(vacancyGateRuleSchema).default([]),
+});
+export type VacancyGates = z.infer<typeof vacancyGatesSchema>;
+export type VacancyGateRule = z.infer<typeof vacancyGateRuleSchema>;
+
 export const targetCompaniesSchema = z.object({
   version: z.number().default(1),
   companies: z.array(z.string()).default([]),
@@ -115,6 +144,15 @@ export function loadBlacklist(): Blacklist {
     path.join(p.strategyDir, "blacklist.yaml"),
     path.join(p.configDefaultsDir, "blacklist.template.yaml"),
     blacklistSchema,
+  );
+}
+
+export function loadVacancyGates(): VacancyGates {
+  const p = resolvePaths();
+  return readYamlOrDefault(
+    path.join(p.strategyDir, "vacancy-gates.yaml"),
+    path.join(p.configDefaultsDir, "vacancy-gates.template.yaml"),
+    vacancyGatesSchema,
   );
 }
 

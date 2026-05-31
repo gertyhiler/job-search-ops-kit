@@ -1,3 +1,4 @@
+export * from "./playwright-profile.ts";
 export * from "./env.ts";
 export * from "./paths.ts";
 export * from "./logger.ts";

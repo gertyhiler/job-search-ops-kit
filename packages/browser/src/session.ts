@@ -1,5 +1,5 @@
 import path from "node:path";
-import { ensureDir } from "@job-search/core";
+import { ensureDir, type PlaywrightProfile } from "@job-search/core";
 import { closeQuietly, launchContext } from "./browser.ts";
 import { isAuthenticated } from "./failure-detection.ts";
 
@@ -7,6 +7,7 @@ export interface LoginBootstrapOptions {
   storageStatePath: string;
   loginUrl?: string;
   timeoutMs?: number;
+  profile?: PlaywrightProfile;
   onStatus?: (message: string) => void;
 }
 
@@ -28,7 +29,10 @@ export async function loginBootstrap(
   const status = opts.onStatus ?? (() => {});
   ensureDir(path.dirname(opts.storageStatePath));
 
-  const { browser, context } = await launchContext({ headless: false });
+  const { browser, context } = await launchContext({
+    headless: false,
+    profile: opts.profile,
+  });
   try {
     const page = await context.newPage();
     await page.goto(opts.loginUrl ?? "https://hh.ru/account/login", {

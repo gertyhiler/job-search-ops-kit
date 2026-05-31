@@ -18,6 +18,7 @@ export function runInit(): void {
     p.profileDir,
     p.strategyDir,
     p.templatesDir,
+    path.join(p.dataDir, "prompts"),
     p.resumeDir,
     p.resumeVariantsDir,
     p.journalDir,
@@ -53,6 +54,7 @@ export function runInit(): void {
     "manual-review-policy",
     "blacklist",
     "target-companies",
+    "vacancy-gates",
   ]) {
     copy(
       path.join(p.configDefaultsDir, `${name}.template.yaml`),
@@ -78,6 +80,12 @@ export function runInit(): void {
       copy(path.join(templatesDefaults, file), path.join(p.templatesDir, file));
     }
   }
+
+  // Classification prompt (data/prompts overrides repo prompts/)
+  copy(
+    path.join(p.configDefaultsDir, "prompts", "vacancy-scoring.template.md"),
+    path.join(p.dataDir, "prompts", "vacancy-scoring.md"),
+  );
 
   // Database
   const db = openAndMigrate(p.dbPath);
