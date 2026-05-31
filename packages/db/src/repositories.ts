@@ -696,6 +696,90 @@ export function resolveQueueItem(
   ).run(status, nowIso(), nowIso(), id);
 }
 
+/** Resolve open queue rows matching optional type/entity filters. */
+export function resolveOpenQueues(
+  db: DB,
+  filter: {
+    type?: QueueType;
+    entityType?: string;
+    entityId?: number;
+  },
+): number {
+  const clauses = ["status = 'open'"];
+  const params: unknown[] = [];
+  if (filter.type) {
+    clauses.push("type = ?");
+    params.push(filter.type);
+  }
+  if (filter.entityType) {
+    clauses.push("entity_type = ?");
+    params.push(filter.entityType);
+  }
+  if (filter.entityId !== undefined) {
+    clauses.push("entity_id = ?");
+    params.push(filter.entityId);
+  }
+  const ts = nowIso();
+  const info = prep(
+    db,
+    `UPDATE queues SET status = 'resolved', resolved_at = ?, updated_at = ?
+     WHERE ${clauses.join(" AND ")}`,
+  ).run(ts, ts, ...params);
+  return info.changes;
+}
+
+/** Retry auto applies that failed transiently (playbook/selector), not captcha. */
+export function requeueFailedAutoApplies(db: DB, limit = 50): number {
+  const rows = prep(
+    db,
+    `SELECT v.id FROM vacancies v
+     JOIN applications a ON a.vacancy_id = v.id
+     WHERE v.pipeline_status = 'queued'
+       AND v.apply_mode = 'auto'
+       AND a.status = 'failed'
+       AND a.failure_reason IN ('selector_broken', 'network_error', 'unknown_error')
+     ORDER BY v.priority_score DESC, v.id ASC
+     LIMIT ?`,
+  ).all(limit) as { id: number }[];
+
+  const ts = nowIso();
+  for (const row of rows) {
+    setVacancyStatus(db, row.id, "packaged");
+    const app = getApplicationByVacancy(db, row.id);
+    if (app) {
+      updateApplicationStatus(db, app.id, {
+        status: "packaged",
+        failureReason: null,
+      });
+    }
+    resolveOpenQueues(db, {
+      type: "broken_selector",
+      entityType: "vacancy",
+      entityId: row.id,
+    });
+  }
+  return rows.length;
+}
+
+/** Undo mistaken reject when apply gate hit a transient limit (vacancy still has packaged app). */
+export function requeuePackagedAutoRejected(db: DB, limit = 100): number {
+  const rows = prep(
+    db,
+    `SELECT v.id FROM vacancies v
+     JOIN applications a ON a.vacancy_id = v.id
+     WHERE v.pipeline_status = 'rejected'
+       AND v.apply_mode = 'auto'
+       AND a.status = 'packaged'
+     ORDER BY v.priority_score DESC, v.id ASC
+     LIMIT ?`,
+  ).all(limit) as { id: number }[];
+
+  for (const row of rows) {
+    setVacancyStatus(db, row.id, "packaged");
+  }
+  return rows.length;
+}
+
 export function queueCounts(
   db: DB,
 ): Array<{ type: string; status: string; n: number }> {

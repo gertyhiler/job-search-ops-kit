@@ -8,14 +8,20 @@ import {
   hhPlaywrightProfileFromEnv,
 } from "@job-search/core";
 import {
+  ensurePlaybook,
   getFunnel,
   getVacancyById,
   listApplications,
   listQueue,
   listVacancies,
   openAndMigrate,
+  recordPlaybookSuccess,
+  requeueFailedAutoApplies,
+  requeuePackagedAutoRejected,
   requeueVacanciesForRescore,
+  resolveOpenQueues,
 } from "@job-search/db";
+import { recordEvent } from "@job-search/memory";
 import { loginBootstrap } from "@job-search/browser";
 import { runConsolidation } from "@job-search/memory";
 import { renderResume } from "@job-search/resume";
@@ -91,6 +97,32 @@ export async function apply(args: ParsedArgs): Promise<void> {
   console.log(`apply mode: ${ctx.env.AUTO_APPLY_MODE}`);
   printJson(await runApply(ctx));
   ctx.db.close();
+}
+
+/** Resolve broken_selector queues and requeue failed auto applies after a playbook fix. */
+export function playbookRepair(): void {
+  const { paths } = envPaths();
+  const db = openAndMigrate(paths.dbPath);
+  const playbook = ensurePlaybook(db, "hh", "apply");
+  const resolvedQueues = resolveOpenQueues(db, { type: "broken_selector" });
+  const requeued = requeueFailedAutoApplies(db);
+  const restored = requeuePackagedAutoRejected(db);
+  recordPlaybookSuccess(db, playbook.id);
+  recordEvent(db, {
+    type: "playbook_repaired",
+    entityType: "playbook",
+    entityId: playbook.id,
+    payload: { resolvedQueues, requeued, restored },
+  });
+  printJson({
+    ok: true,
+    resolvedQueues,
+    requeued,
+    restored,
+    playbookStatus: playbook.status,
+    funnel: getFunnel(db),
+  });
+  db.close();
 }
 
 export async function notify(): Promise<void> {

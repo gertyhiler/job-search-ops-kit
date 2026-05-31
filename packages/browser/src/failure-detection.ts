@@ -39,7 +39,12 @@ export async function detectAlreadyApplied(page: Page): Promise<boolean> {
 }
 
 export async function detectCaptcha(page: Page): Promise<boolean> {
-  return bodyTextIncludes(page, HH.captchaText);
+  if (await bodyTextIncludes(page, HH.captchaText)) return true;
+  if (await pageTextIncludes(page, HH.captchaText, "overlay")) return true;
+  const turnstile = page.locator(
+    'iframe[src*="turnstile"], iframe[src*="captcha"], [class*="turnstile"]',
+  );
+  return (await turnstile.count().catch(() => 0)) > 0;
 }
 
 export async function detectQuestionnaire(page: Page): Promise<boolean> {

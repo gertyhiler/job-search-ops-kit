@@ -17,6 +17,7 @@ Pipeline
   hh:sync | sync           search then score
   letters:generate         Generate cover letters / application packages
   apply [--dry-run|--real] Run the Playwright apply stage
+  playbook repair         Clear broken_selector queues and requeue failed auto applies
   notify                   Send pending Telegram notifications
   start                    Run the full long-lived pipeline (cron queues)
 
@@ -81,6 +82,13 @@ async function main(): Promise<void> {
       return;
     case "apply":
       await run.apply(args);
+      return;
+    case "playbook":
+      if (args.positionals[0] === "repair") run.playbookRepair();
+      else {
+        console.error("Usage: job-search playbook repair");
+        process.exitCode = 1;
+      }
       return;
     case "notify":
       await run.notify();

@@ -30,6 +30,7 @@ export const HH = {
   submitButton: [
     '[data-qa="vacancy-response-submit-popup"]',
     '[data-qa="vacancy-response-letter-submit"]',
+    '[data-qa="vacancy-response-popup-submit-button"]',
   ],
   submitButtonText: ["Откликнуться", "Отправить"],
   successText: [
@@ -38,6 +39,7 @@ export const HH = {
     "Отклик доставлен",
     "Отклик успешно отправлен",
     "Отклик отправлен",
+    "Сообщение отправлено",
   ],
   crossCountryText: ["вакансию в другой стране", "другой стран"],
   crossCountryConfirmText: ["Все равно откликнуться", "Всё равно откликнуться"],

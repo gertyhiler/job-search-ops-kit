@@ -48,7 +48,22 @@ export async function waitForResponsePopup(page: Page, timeoutMs = 8000): Promis
 
 /** Response popup root — scopes submit/letter controls away from the vacancy page. */
 export function responsePopup(page: Page) {
-  return page.locator('[class*="overlay"]:visible').last();
+  const scoped = page
+    .locator('[class*="overlay"]:visible')
+    .filter({
+      has: page.locator(
+        '[data-qa*="vacancy-response"], textarea[name="text"], [data-qa="vacancy-response-popup-form-letter-input"]',
+      ),
+    })
+    .last();
+  return scoped;
+}
+
+/** Submit targets: response popup first, then any visible dialog, then page. */
+export function submitRoots(page: Page) {
+  const popup = responsePopup(page);
+  const dialog = page.getByRole("dialog").last();
+  return { popup, dialog, page };
 }
 
 export async function detectResumeChooserInPopup(page: Page): Promise<boolean> {

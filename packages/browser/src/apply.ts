@@ -19,6 +19,7 @@ import {
   dismissCrossCountryModal,
   responsePopup,
   selectResumeInPopup,
+  submitRoots,
   waitForResponsePopup,
 } from "./hh-modals.ts";
 import { HH } from "./selectors.ts";
@@ -126,6 +127,100 @@ async function findTextarea(page: Page): Promise<Locator | null> {
     if (await loc.count().catch(() => 0)) return loc;
   }
   return null;
+}
+
+async function captureArtifacts(
+  page: Page,
+  context: import("playwright").BrowserContext,
+  screenshotPath: string,
+  tracePath: string,
+  tracingStarted: boolean,
+): Promise<{ savedScreenshot: string | null; savedTrace: string | null }> {
+  let savedScreenshot: string | null = null;
+  let savedTrace: string | null = null;
+  try {
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    savedScreenshot = screenshotPath;
+  } catch {
+    // ignore
+  }
+  if (tracingStarted) {
+    try {
+      await context.tracing.stop({ path: tracePath });
+      savedTrace = tracePath;
+    } catch {
+      // ignore
+    }
+  }
+  return { savedScreenshot, savedTrace };
+}
+
+async function clickSubmit(page: Page, timeout = 6000): Promise<boolean> {
+  const { popup, dialog } = submitRoots(page);
+  if (await clickFirstIn(popup, HH.submitButton, HH.submitButtonText, timeout)) {
+    return true;
+  }
+  if (await clickFirstIn(dialog, HH.submitButton, HH.submitButtonText, timeout)) {
+    return true;
+  }
+  return clickFirst(page, HH.submitButton, HH.submitButtonText, timeout);
+}
+
+async function classifySubmitBlock(
+  page: Page,
+): Promise<"captcha_or_antibot" | "already_applied" | "success" | null> {
+  if (await detectCaptcha(page)) return "captcha_or_antibot";
+  if (await detectAlreadyApplied(page)) return "already_applied";
+  if (await detectSuccess(page)) return "success";
+  return null;
+}
+
+async function captureAndFail(
+  page: Page,
+  context: import("playwright").BrowserContext,
+  screenshotPath: string,
+  tracePath: string,
+  tracingStarted: boolean,
+  errorType: ApplyErrorType,
+  message: string,
+): Promise<ApplyOutcome> {
+  const { savedScreenshot, savedTrace } = await captureArtifacts(
+    page,
+    context,
+    screenshotPath,
+    tracePath,
+    tracingStarted,
+  );
+  return fail(errorType, message, {
+    screenshotPath: savedScreenshot,
+    tracePath: savedTrace,
+  });
+}
+
+async function captureAndSuccess(
+  page: Page,
+  context: import("playwright").BrowserContext,
+  screenshotPath: string,
+  tracePath: string,
+  tracingStarted: boolean,
+  message: string,
+): Promise<ApplyOutcome> {
+  const { savedScreenshot, savedTrace } = await captureArtifacts(
+    page,
+    context,
+    screenshotPath,
+    tracePath,
+    tracingStarted,
+  );
+  return {
+    ok: true,
+    status: "applied",
+    errorType: null,
+    queueType: null,
+    message,
+    screenshotPath: savedScreenshot,
+    tracePath: savedTrace,
+  };
 }
 
 export async function applyToVacancy(input: ApplyInput): Promise<ApplyOutcome> {
@@ -337,57 +432,96 @@ export async function applyToVacancy(input: ApplyInput): Promise<ApplyOutcome> {
       };
     }
 
-    const submitted = await clickFirstIn(
-      popup,
-      HH.submitButton,
-      HH.submitButtonText,
-      6000,
-    );
-    if (!submitted) {
-      ({ savedScreenshot, savedTrace } = await captureArtifacts(
+    if (await detectCaptcha(page)) {
+      return captureAndFail(
         page,
         context,
         screenshotPath,
         tracePath,
         tracingStarted,
-      ));
-      return fail("selector_broken", "Submit control not found.", {
-        screenshotPath: savedScreenshot,
-        tracePath: savedTrace,
-      });
+        "captcha_or_antibot",
+        "CAPTCHA / antibot detected before submit. Stopping (never bypass).",
+      );
+    }
+
+    const submitted = await clickSubmit(page, 6000);
+    if (!submitted) {
+      const block = await classifySubmitBlock(page);
+      if (block === "captcha_or_antibot") {
+        return captureAndFail(
+          page,
+          context,
+          screenshotPath,
+          tracePath,
+          tracingStarted,
+          "captcha_or_antibot",
+          "CAPTCHA blocks submit (button disabled or antibot overlay).",
+        );
+      }
+      if (block === "already_applied") {
+        return {
+          ok: true,
+          status: "queued",
+          errorType: "already_applied",
+          queueType: null,
+          message: "Already applied.",
+          screenshotPath: null,
+          tracePath: null,
+        };
+      }
+      if (block === "success") {
+        return captureAndSuccess(
+          page,
+          context,
+          screenshotPath,
+          tracePath,
+          tracingStarted,
+          "Application submitted (success detected without submit click).",
+        );
+      }
+      return captureAndFail(
+        page,
+        context,
+        screenshotPath,
+        tracePath,
+        tracingStarted,
+        "selector_broken",
+        "Submit control not found.",
+      );
     }
 
     await page.waitForTimeout(2500);
     if (await detectCaptcha(page)) {
-      ({ savedScreenshot, savedTrace } = await captureArtifacts(
+      const block = await classifySubmitBlock(page);
+      if (block === "success" || block === "already_applied") {
+        return captureAndSuccess(
+          page,
+          context,
+          screenshotPath,
+          tracePath,
+          tracingStarted,
+          "Application submitted.",
+        );
+      }
+      return captureAndFail(
         page,
         context,
         screenshotPath,
         tracePath,
         tracingStarted,
-      ));
-      return fail("captcha_or_antibot", "CAPTCHA appeared at submit.", {
-        screenshotPath: savedScreenshot,
-        tracePath: savedTrace,
-      });
+        "captcha_or_antibot",
+        "CAPTCHA appeared at submit.",
+      );
     }
     if ((await detectSuccess(page)) || (await detectAlreadyApplied(page))) {
-      ({ savedScreenshot, savedTrace } = await captureArtifacts(
+      return captureAndSuccess(
         page,
         context,
         screenshotPath,
         tracePath,
         tracingStarted,
-      ));
-      return {
-        ok: true,
-        status: "applied",
-        errorType: null,
-        queueType: null,
-        message: "Application submitted.",
-        screenshotPath: savedScreenshot,
-        tracePath: savedTrace,
-      };
+        "Application submitted.",
+      );
     }
 
     ({ savedScreenshot, savedTrace } = await captureArtifacts(
@@ -410,30 +544,4 @@ export async function applyToVacancy(input: ApplyInput): Promise<ApplyOutcome> {
   } finally {
     await closeQuietly(browser);
   }
-}
-
-async function captureArtifacts(
-  page: Page,
-  context: import("playwright").BrowserContext,
-  screenshotPath: string,
-  tracePath: string,
-  tracingStarted: boolean,
-): Promise<{ savedScreenshot: string | null; savedTrace: string | null }> {
-  let savedScreenshot: string | null = null;
-  let savedTrace: string | null = null;
-  try {
-    await page.screenshot({ path: screenshotPath, fullPage: true });
-    savedScreenshot = screenshotPath;
-  } catch {
-    // ignore
-  }
-  if (tracingStarted) {
-    try {
-      await context.tracing.stop({ path: tracePath });
-      savedTrace = tracePath;
-    } catch {
-      // ignore
-    }
-  }
-  return { savedScreenshot, savedTrace };
 }

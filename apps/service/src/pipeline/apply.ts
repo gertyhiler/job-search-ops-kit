@@ -12,6 +12,7 @@ import {
   listVacanciesByStatus,
   recordPlaybookFailure,
   recordPlaybookSuccess,
+  resolveOpenQueues,
   setPlaybookStatus,
   setVacancyStatus,
   updateApplicationStatus,
@@ -111,9 +112,13 @@ export async function runApply(
           reason: gate.reason,
         });
         setVacancyStatus(ctx.db, row.id, "queued");
-      } else {
+      } else if (
+        gate.reason === "classified reject" ||
+        gate.reason === "fit below threshold"
+      ) {
         setVacancyStatus(ctx.db, row.id, "rejected");
       }
+      // Transient blocks (daily/per-company limits) keep vacancy packaged for retry.
       report.skipped += 1;
       recordEvent(ctx.db, {
         type: "apply_gate_blocked",
@@ -170,6 +175,20 @@ export async function runApply(
       setVacancyStatus(ctx.db, row.id, "applied");
       if (playbook.status === "draft")
         setPlaybookStatus(ctx.db, playbook.id, "dry_run");
+      const repaired = resolveOpenQueues(ctx.db, {
+        type: "broken_selector",
+        entityType: "vacancy",
+        entityId: row.id,
+      });
+      if (repaired > 0) {
+        recordPlaybookSuccess(ctx.db, playbook.id);
+        recordEvent(ctx.db, {
+          type: "playbook_repaired",
+          entityType: "playbook",
+          entityId: playbook.id,
+          payload: { vacancyId: row.id, resolvedQueues: repaired },
+        });
+      }
       applicationsToday += 1;
       report.dryRun += 1;
       recordEvent(ctx.db, {
