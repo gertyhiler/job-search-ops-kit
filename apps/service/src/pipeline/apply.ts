@@ -75,7 +75,21 @@ export async function runApply(
     limit,
     playbookStatus: playbook.status,
     applicationsToday,
+    dailyLimit: policy.maxAutoApplicationsPerDay,
   });
+
+  if (applicationsToday >= policy.maxAutoApplicationsPerDay) {
+    ctx.logger.info(
+      {
+        applicationsToday,
+        limit: policy.maxAutoApplicationsPerDay,
+      },
+      "Daily auto-apply limit already reached; skipping apply tick",
+    );
+    return report;
+  }
+
+  let dailyLimitLogged = false;
 
   for (const row of rows) {
     const app = getApplicationByVacancy(ctx.db, row.id);
@@ -120,6 +134,18 @@ export async function runApply(
       }
       // Transient blocks (daily/per-company limits) keep vacancy packaged for retry.
       report.skipped += 1;
+      if (gate.reason === "daily auto-apply limit reached") {
+        if (!dailyLimitLogged) {
+          dailyLimitLogged = true;
+          recordEvent(ctx.db, {
+            type: "apply_gate_blocked",
+            entityType: "vacancy",
+            entityId: row.id,
+            payload: { reason: gate.reason, backoff: true },
+          });
+        }
+        break;
+      }
       recordEvent(ctx.db, {
         type: "apply_gate_blocked",
         entityType: "vacancy",

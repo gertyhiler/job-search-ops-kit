@@ -94,7 +94,7 @@ export function applyPolicyClamp(
     risks.push(`fit below policy minimum (${policy.fitScoreMin})`);
   }
   if (applyMode === "auto" && score.riskScore > policy.riskScoreMax) {
-    applyMode = "reject";
+    applyMode = "manual_review";
     risks.push(`risk above policy maximum (${policy.riskScoreMax})`);
   }
   if (

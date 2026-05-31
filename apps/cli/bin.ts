@@ -29,7 +29,9 @@ Memory & resume
 Inspect
   vacancies list [--status s --mode m --limit n]
   vacancies show <id>
+  vacancies import <hh_vacancy_url>
   vacancies requeue-score --recover-audit [--score]
+  vacancies requeue-score --manual-review-queued [--score]
   vacancies requeue-score --ids 1,2,3 [--score]
   applications list
   funnel
@@ -119,6 +121,11 @@ async function main(): Promise<void> {
     case "vacancies":
       if (args.positionals[0] === "show")
         run.vacancyShow({ ...args, positionals: args.positionals.slice(1) });
+      else if (args.positionals[0] === "import")
+        await run.vacanciesImport({
+          ...args,
+          positionals: args.positionals.slice(1),
+        });
       else if (args.positionals[0] === "requeue-score")
         await run.vacanciesRequeueScore({
           ...args,

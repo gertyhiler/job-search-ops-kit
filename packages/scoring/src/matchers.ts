@@ -9,6 +9,17 @@ function includesAny(text: string, needles: string[]): boolean {
   return needles.some((n) => n && text.includes(n.toLowerCase()));
 }
 
+function includesWord(text: string, word: string): boolean {
+  const w = word.toLowerCase().trim();
+  if (!w) return false;
+  const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![a-z])${escaped}(?![a-z])`, "i").test(text);
+}
+
+function includesWordAny(text: string, words: string[]): boolean {
+  return words.some((w) => w && includesWord(text, w));
+}
+
 export function salaryRubAmount(v: NormalizedVacancy): number | null {
   const amount = v.salaryMax ?? v.salaryMin;
   if (amount === null) return null;
@@ -64,6 +75,11 @@ export function ruleMatches(v: NormalizedVacancy, when: GateRuleWhen): boolean {
   )
     return false;
   if (when.haystackContainsAny?.length && !includesAny(text, when.haystackContainsAny))
+    return false;
+  if (
+    when.haystackWordContainsAny?.length &&
+    !includesWordAny(text, when.haystackWordContainsAny)
+  )
     return false;
   if (
     when.haystackContainsAll?.length &&

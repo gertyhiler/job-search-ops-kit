@@ -108,6 +108,33 @@ describe("evaluateVacancyGates", () => {
     expect(r.action).toBe("reject");
     expect(r.ruleId).toBe("ban-mobile-native");
   });
+
+  it("rejects java word but not javascript", () => {
+    const javaGates = vacancyGatesSchema.parse({
+      rules: [
+        {
+          id: "ban-java",
+          when: { haystackWordContainsAny: ["java"] },
+          action: "reject",
+          reason: "java stack",
+        },
+      ],
+    });
+    expect(
+      evaluateVacancyGates(
+        vac({ title: "Senior Java Developer", remoteType: "remote" }),
+        javaGates,
+        blacklist,
+      ).action,
+    ).toBe("reject");
+    expect(
+      evaluateVacancyGates(
+        vac({ title: "Senior Javascript Developer", remoteType: "remote" }),
+        javaGates,
+        blacklist,
+      ).action,
+    ).toBe("continue");
+  });
 });
 
 describe("mechanical score routing", () => {

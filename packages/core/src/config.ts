@@ -42,6 +42,8 @@ const gateRuleWhenSchema = z.object({
   titleContainsAny: z.array(z.string()).optional(),
   descriptionContainsAny: z.array(z.string()).optional(),
   haystackContainsAny: z.array(z.string()).optional(),
+  /** Whole-word match (e.g. `java` matches "Java dev" but not "javascript"). */
+  haystackWordContainsAny: z.array(z.string()).optional(),
   haystackContainsAll: z.array(z.string()).optional(),
   companyContainsAny: z.array(z.string()).optional(),
   keySkillsContainsAny: z.array(z.string()).optional(),

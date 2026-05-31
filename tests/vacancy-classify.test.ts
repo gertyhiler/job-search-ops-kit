@@ -35,7 +35,7 @@ describe("applyPolicyClamp", () => {
     expect(out.applyMode).toBe("manual_review");
   });
 
-  it("rejects auto when risk exceeds policy maximum", () => {
+  it("downgrades auto to manual_review when risk exceeds policy maximum", () => {
     const score = scoreResultSchema.parse({
       fitScore: 90,
       salaryScore: 50,
@@ -53,6 +53,6 @@ describe("applyPolicyClamp", () => {
       publishedAt: new Date().toISOString(),
     });
     const out = applyPolicyClamp(score, policy, target, v);
-    expect(out.applyMode).toBe("reject");
+    expect(out.applyMode).toBe("manual_review");
   });
 });

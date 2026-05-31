@@ -6,3 +6,4 @@ export * from "./selectors.ts";
 export * from "./failure-detection.ts";
 export * from "./parse-vacancy-page.ts";
 export * from "./hh-search.ts";
+export * from "./hh-vacancy-fetch.ts";

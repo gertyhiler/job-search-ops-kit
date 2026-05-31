@@ -7,6 +7,17 @@ import {
   evaluateVacancyGates,
 } from "@job-search/scoring";
 
+/** Vacancies in manual_review queue awaiting human triage. */
+export function findManualReviewQueuedVacancyIds(db: DB): number[] {
+  const rows = db
+    .prepare(
+      `SELECT id FROM vacancies
+       WHERE pipeline_status = 'queued' AND apply_mode = 'manual_review'`,
+    )
+    .all() as { id: number }[];
+  return rows.map((r) => r.id).sort((a, b) => a - b);
+}
+
 /** Vacancies rejected at score but passing gates + mechanical routing today. */
 export function findRecoverableRejectedVacancyIds(db: DB): number[] {
   const scoring = loadVacancyScoring();

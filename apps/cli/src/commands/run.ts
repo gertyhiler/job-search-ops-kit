@@ -20,9 +20,11 @@ import {
   requeuePackagedAutoRejected,
   requeueVacanciesForRescore,
   resolveOpenQueues,
+  upsertCompany,
+  upsertVacancy,
 } from "@job-search/db";
 import { recordEvent } from "@job-search/memory";
-import { loginBootstrap } from "@job-search/browser";
+import { fetchHhVacancyByUrl, loginBootstrap } from "@job-search/browser";
 import { runConsolidation } from "@job-search/memory";
 import { renderResume } from "@job-search/resume";
 import {
@@ -35,9 +37,10 @@ import {
   runScore,
   runSearch,
 } from "@job-search/service";
+import { computeContentHash, mapWebToHhDetail, normalizeHhVacancy } from "@job-search/connectors";
 import { callToolOnce, listToolNames, startMcpServer } from "@job-search/mcp";
 import type { ParsedArgs } from "../args.ts";
-import { findRecoverableRejectedVacancyIds } from "../recover-rejected.ts";
+import { findManualReviewQueuedVacancyIds, findRecoverableRejectedVacancyIds } from "../recover-rejected.ts";
 
 function printJson(value: unknown): void {
   console.log(JSON.stringify(value, null, 2));
@@ -260,6 +263,51 @@ export function vacancyShow(args: ParsedArgs): void {
   db.close();
 }
 
+export async function vacanciesImport(args: ParsedArgs): Promise<void> {
+  const url = args.positionals[0];
+  if (!url) {
+    console.error("Usage: job-search vacancies import <hh_vacancy_url>");
+    process.exitCode = 1;
+    return;
+  }
+
+  const parsed = new URL(url);
+  if (!parsed.hostname.endsWith("hh.ru") || !parsed.pathname.includes("/vacancy/")) {
+    console.error(`Only HH vacancy URLs are supported for import: ${url}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const { paths } = envPaths();
+  const db = openAndMigrate(paths.dbPath);
+  try {
+    const web = await fetchHhVacancyByUrl(url);
+    const hhDetail = mapWebToHhDetail(web);
+    const normalized = normalizeHhVacancy(hhDetail);
+    const contentHash = computeContentHash(normalized);
+
+    const companyId =
+      normalized.companyName.trim().length > 0
+        ? upsertCompany(db, {
+            source: normalized.source,
+            externalId: normalized.companyExternalId,
+            name: normalized.companyName,
+          }).id
+        : null;
+
+    const result = upsertVacancy(db, normalized, companyId, contentHash);
+    recordEvent(db, {
+      type: "vacancy_imported",
+      entityType: "vacancy",
+      entityId: result.id,
+      payload: { source: normalized.source, externalId: normalized.externalId, url },
+    });
+    printJson({ ok: true, vacancyId: result.id, isNew: result.isNew, changed: result.changed });
+  } finally {
+    db.close();
+  }
+}
+
 export async function vacanciesRequeueScore(args: ParsedArgs): Promise<void> {
   const { paths } = envPaths();
   const db = openAndMigrate(paths.dbPath);
@@ -273,9 +321,11 @@ export async function vacanciesRequeueScore(args: ParsedArgs): Promise<void> {
       .filter((n) => Number.isFinite(n) && n > 0);
   } else if (args.flags["recover-audit"]) {
     ids = findRecoverableRejectedVacancyIds(db);
+  } else if (args.flags["manual-review-queued"]) {
+    ids = findManualReviewQueuedVacancyIds(db);
   } else {
     console.error(
-      "Usage: job-search vacancies requeue-score --recover-audit | --ids 1,2,3 [--score]",
+      "Usage: job-search vacancies requeue-score --recover-audit | --manual-review-queued | --ids 1,2,3 [--score]",
     );
     db.close();
     process.exitCode = 1;
