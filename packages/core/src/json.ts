@@ -42,3 +42,34 @@ export function parseJsonLoose<T = unknown>(text: string): T {
   }
   return JSON.parse(extracted) as T;
 }
+
+/** Parse structured JSON from AI CLI output (plain JSON, fences, or codex NDJSON). */
+export function parseAiJsonOutput<T = unknown>(text: string): T {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    throw new Error("Empty AI output");
+  }
+
+  const lines = trimmed.split("\n").map((line) => line.trim()).filter(Boolean);
+  if (lines.length > 1) {
+    for (const line of lines) {
+      try {
+        const event = JSON.parse(line) as {
+          type?: string;
+          item?: { type?: string; text?: string };
+        };
+        if (
+          event.type === "item.completed" &&
+          event.item?.type === "agent_message" &&
+          typeof event.item.text === "string"
+        ) {
+          return parseJsonLoose<T>(event.item.text);
+        }
+      } catch {
+        // not a codex event line
+      }
+    }
+  }
+
+  return parseJsonLoose<T>(text);
+}

@@ -24,14 +24,14 @@ areas:
   - 40
   - 16
 
-# Empty = no HH schedule filter (widest funnel). Narrow in vacancy-gates or AI prompt.
+# Empty = no HH schedule filter (widest funnel). Narrow in vacancy-scoring.yaml filters.
 schedule: []
 
 experience: null
 
 perQueryLimit: 100
 
-# Title-only ban at search time. Full text bans live in blacklist.yaml + vacancy-gates.yaml.
+# Title-only ban at search time. Full text bans live in vacancy-scoring.yaml filters.
 excludeKeywords:
   - "стажер"
   - "intern"

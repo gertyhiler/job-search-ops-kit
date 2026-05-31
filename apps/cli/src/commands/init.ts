@@ -5,6 +5,7 @@ import {
   ensureDir,
   loadEnv,
   resolvePaths,
+  STRATEGY_FILES,
 } from "@job-search/core";
 import { openAndMigrate } from "@job-search/db";
 
@@ -47,15 +48,8 @@ export function runInit(): void {
     }
   }
 
-  // Strategy YAML
-  for (const name of [
-    "search-strategy",
-    "auto-apply-policy",
-    "manual-review-policy",
-    "blacklist",
-    "target-companies",
-    "vacancy-gates",
-  ]) {
+  // Strategy YAML (3 files: search funnel, apply safety, vacancy scoring)
+  for (const name of STRATEGY_FILES) {
     copy(
       path.join(p.configDefaultsDir, `${name}.template.yaml`),
       path.join(p.strategyDir, `${name}.yaml`),

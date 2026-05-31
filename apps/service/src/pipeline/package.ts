@@ -9,6 +9,7 @@ import {
 import { recordEvent } from "@job-search/memory";
 import { generateCoverLetter } from "../cover-letter.ts";
 import type { PipelineContext } from "../context.ts";
+import { idleReason, logStageStart, readPipelineBacklog } from "./status.ts";
 
 export interface PackageReport {
   packaged: number;
@@ -23,6 +24,7 @@ export async function runPackage(
   const rows = listVacanciesByStatus(ctx.db, "classified", limit).filter(
     (r) => r.apply_mode === "auto" || r.apply_mode === "high_value",
   );
+  logStageStart(ctx, "package", { candidates: rows.length, limit });
 
   for (const row of rows) {
     let normalized: NormalizedVacancy;
@@ -44,7 +46,7 @@ export async function runPackage(
     }
 
     const cover = await generateCoverLetter(
-      { env: ctx.env, paths: ctx.paths, logger: ctx.logger },
+      { env: ctx.env, paths: ctx.paths, db: ctx.db, logger: ctx.logger },
       normalized,
     );
 
@@ -77,6 +79,14 @@ export async function runPackage(
     });
   }
 
-  ctx.logger.info({ report }, "Package stage finished");
+  const backlog = readPipelineBacklog(ctx);
+  ctx.logger.info(
+    {
+      report,
+      backlog,
+      idle: idleReason("package", backlog),
+    },
+    report.packaged > 0 ? "Package tick finished" : "Package tick idle",
+  );
   return report;
 }

@@ -1,5 +1,6 @@
 import { shutdownActiveAiCommands } from "@job-search/core";
 import { runConsolidation, shouldConsolidate } from "@job-search/memory";
+import { startBotPolling } from "@job-search/telegram";
 import { createContext, type PipelineContext } from "../context.ts";
 import {
   runApply,
@@ -9,6 +10,7 @@ import {
   runSearch,
   sendDailySummary,
   sendWeeklySummary,
+  logPipelineStatus,
 } from "../pipeline/index.ts";
 import {
   createCronScheduler,
@@ -28,6 +30,7 @@ export function createApp(context = createContext()): App {
   const downstream = Math.min(env.POLL_INTERVAL_SEC, 30);
 
   const maintenanceTick = async (): Promise<void> => {
+    logPipelineStatus(context, "heartbeat");
     if (shouldConsolidate(db, env.CONSOLIDATION_EVENT_THRESHOLD)) {
       logger.info("Consolidation trigger reached; running consolidation");
       await runConsolidation(db, env, logger);
@@ -101,15 +104,12 @@ export function createApp(context = createContext()): App {
         { mode: env.AUTO_APPLY_MODE, downstream },
         "Starting pipeline",
       );
+      logPipelineStatus(context, "startup");
       if (context.bot) {
-        context.bot
-          .start({ onStart: () => logger.info("Telegram bot started") })
-          .catch((error) => {
-            logger.error(
-              { error: error instanceof Error ? error.message : String(error) },
-              "Telegram bot crashed",
-            );
-          });
+        void startBotPolling(context.bot, {
+          enabled: env.TELEGRAM_POLLING,
+          logger,
+        });
       } else {
         logger.info("Telegram disabled (no TELEGRAM_BOT_TOKEN)");
       }

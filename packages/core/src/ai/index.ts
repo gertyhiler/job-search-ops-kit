@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import { parseJsonLoose } from "../json.ts";
+import { parseAiJsonOutput } from "../json.ts";
 import { resolveAiCommandFromModelId } from "./command-adapter.ts";
 import { runAiCommand } from "./runner.ts";
 
@@ -55,7 +55,7 @@ export async function runAiJson<S extends z.ZodTypeAny>(
     ...opts,
     jsonMode: opts.jsonMode ?? true,
   });
-  const parsed = parseJsonLoose(text);
+  const parsed = parseAiJsonOutput(text);
   const data = opts.schema.parse(parsed) as z.infer<S>;
   return { data, rawText: text, modelId: opts.modelId, durationMs };
 }

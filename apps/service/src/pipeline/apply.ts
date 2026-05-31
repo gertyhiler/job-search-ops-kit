@@ -19,8 +19,11 @@ import {
 import { recordEvent } from "@job-search/memory";
 import { evaluateApplyGate } from "@job-search/scoring";
 import type { PipelineContext } from "../context.ts";
+import { idleReason, logStageStart, readPipelineBacklog } from "./status.ts";
+import { runRetryFailed } from "./retry-failed.ts";
 
 export interface ApplyReport {
+  requeued: number;
   attempted: number;
   applied: number;
   dryRun: number;
@@ -42,7 +45,9 @@ export async function runApply(
   limit = 50,
 ): Promise<ApplyReport> {
   const policy = loadAutoApplyPolicy();
+  const retry = runRetryFailed(ctx);
   const report: ApplyReport = {
+    requeued: retry.stuckApplying,
     attempted: 0,
     applied: 0,
     dryRun: 0,
@@ -64,6 +69,12 @@ export async function runApply(
     "applied",
     "dry_run",
   ]);
+  logStageStart(ctx, "apply", {
+    candidates: rows.length,
+    limit,
+    playbookStatus: playbook.status,
+    applicationsToday,
+  });
 
   for (const row of rows) {
     const app = getApplicationByVacancy(ctx.db, row.id);
@@ -235,9 +246,15 @@ export async function runApply(
     }
   }
 
+  const backlog = readPipelineBacklog(ctx);
   ctx.logger.info(
-    { report, mode: envReal ? "real-eligible" : "dry_run" },
-    "Apply stage finished",
+    {
+      report,
+      backlog,
+      mode: envReal ? "real-eligible" : "dry_run",
+      idle: idleReason("apply", backlog),
+    },
+    report.attempted > 0 ? "Apply tick finished" : "Apply tick idle",
   );
   return report;
 }

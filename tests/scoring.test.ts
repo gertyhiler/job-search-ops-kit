@@ -4,8 +4,14 @@ import {
   autoApplyPolicySchema,
   blacklistSchema,
   vacancyGatesSchema,
+  vacancyScoringSchema,
 } from "@job-search/core";
-import { evaluateApplyGate, evaluateVacancyGates } from "@job-search/scoring";
+import {
+  computeMechanicalScore,
+  evaluateApplyGate,
+  evaluateScoreRoute,
+  evaluateVacancyGates,
+} from "@job-search/scoring";
 
 function vac(overrides: Record<string, unknown>) {
   return normalizedVacancySchema.parse({
@@ -79,6 +85,130 @@ describe("evaluateVacancyGates", () => {
       blacklist,
     );
     expect(r.action).toBe("continue");
+  });
+
+  it("rejects react native via mobile-native gate", () => {
+    const mobileGates = vacancyGatesSchema.parse({
+      rules: [
+        {
+          id: "ban-mobile-native",
+          when: {
+            haystackContainsAny: ["react native", "react-native", "flutter"],
+          },
+          action: "reject",
+          reason: "mobile native stack",
+        },
+      ],
+    });
+    const r = evaluateVacancyGates(
+      vac({ title: "React Native Developer", remoteType: "remote" }),
+      mobileGates,
+      blacklist,
+    );
+    expect(r.action).toBe("reject");
+    expect(r.ruleId).toBe("ban-mobile-native");
+  });
+});
+
+describe("mechanical score routing", () => {
+  const scoring = vacancyScoringSchema.parse({
+    signals: {
+      fit: {
+        baseline: 30,
+        keywords: [
+          { match: "react", weight: 18 },
+          { match: "node", weight: 14 },
+        ],
+        mismatch: [{ match: "devops", penalty: 25 }],
+      },
+      sensitive: ["relocation"],
+    },
+    routing: {
+      reject: { fitScoreLt: 55, riskScoreGt: 40 },
+      manualReview: { sensitiveKeyword: true },
+      premium: {
+        companies: ["BigCo"],
+        whenAny: [
+          {
+            titleContainsAny: ["senior"],
+            salaryRubGte: 400000,
+          },
+        ],
+      },
+      aiScore: { fitScoreBetween: [55, 72] },
+      default: "auto",
+    },
+  });
+  const policy = autoApplyPolicySchema.parse({});
+
+  it("routes obvious remote react to auto", () => {
+    const v = vac({
+      title: "React developer",
+      remoteType: "remote",
+      keySkills: ["React", "TypeScript"],
+    });
+    const mechanical = computeMechanicalScore(v, scoring, policy);
+    expect(mechanical.fitScore).toBeGreaterThanOrEqual(60);
+    const decision = evaluateScoreRoute(v, scoring, mechanical, policy);
+    expect(decision.route).toBe("auto");
+  });
+
+  it("does not treat react native title as web react fit boost", () => {
+    const v = vac({
+      title: "React Native Developer",
+      remoteType: "remote",
+      keySkills: ["React Native", "Expo"],
+    });
+    const mechanical = computeMechanicalScore(v, scoring, policy);
+    expect(mechanical.fitScore).toBeLessThan(55);
+  });
+
+  it("routes premium senior salary to high_value", () => {
+    const v = vac({
+      title: "Senior React developer",
+      remoteType: "remote",
+      salaryMin: 450000,
+      salaryMax: 500000,
+      salaryCurrency: "RUR",
+    });
+    const mechanical = computeMechanicalScore(v, scoring, policy);
+    const decision = evaluateScoreRoute(v, scoring, mechanical, policy);
+    expect(decision.route).toBe("high_value");
+  });
+
+  it("routes sensitive text to manual_review", () => {
+    const v = vac({
+      title: "React developer",
+      description: "relocation support available",
+      remoteType: "remote",
+    });
+    const mechanical = computeMechanicalScore(v, scoring, policy);
+    const decision = evaluateScoreRoute(v, scoring, mechanical, policy);
+    expect(decision.route).toBe("manual_review");
+  });
+
+  it("routes ambiguous fit to ai_score", () => {
+    const v = vac({
+      title: "Node developer",
+      remoteType: "remote",
+    });
+    const mechanical = computeMechanicalScore(v, scoring, policy);
+    expect(mechanical.fitScore).toBeGreaterThanOrEqual(55);
+    expect(mechanical.fitScore).toBeLessThanOrEqual(72);
+    const decision = evaluateScoreRoute(v, scoring, mechanical, policy);
+    expect(decision.route).toBe("ai_score");
+  });
+
+  it("rejects very low mechanical fit", () => {
+    const v = vac({
+      title: "Software engineer",
+      description: "generic role",
+      remoteType: "remote",
+    });
+    const mechanical = computeMechanicalScore(v, scoring, policy);
+    expect(mechanical.fitScore).toBe(30);
+    const decision = evaluateScoreRoute(v, scoring, mechanical, policy);
+    expect(decision.route).toBe("reject");
   });
 });
 

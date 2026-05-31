@@ -61,6 +61,40 @@ export function createBot(token: string, deps: BotDeps): Bot | null {
   return bot;
 }
 
+/** Start long-polling for commands/callbacks. Returns false when polling is skipped. */
+export async function startBotPolling(
+  bot: Bot,
+  opts?: { enabled?: boolean; logger?: Logger },
+): Promise<boolean> {
+  if (opts?.enabled === false) {
+    opts.logger?.info(
+      "Telegram polling disabled; outbound notifications still work",
+    );
+    return false;
+  }
+
+  try {
+    await bot.api.deleteWebhook({ drop_pending_updates: true });
+    await bot.start({
+      onStart: () => opts?.logger?.info("Telegram bot polling started"),
+    });
+    return true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const conflict =
+      message.includes("409") || message.includes("getUpdates");
+    if (conflict) {
+      opts?.logger?.warn(
+        { error: message },
+        "Telegram polling conflict; outbound notifications only. Stop duplicate pipeline processes or set TELEGRAM_POLLING=false.",
+      );
+      return false;
+    }
+    opts?.logger?.error({ error: message }, "Telegram bot polling failed");
+    return false;
+  }
+}
+
 export interface NotifierDeps {
   bot: Bot | null;
   chatId: string;

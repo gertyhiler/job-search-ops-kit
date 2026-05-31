@@ -6,6 +6,7 @@ STRICT RULES:
 - If the provided facts are thin, keep the letter shorter rather than padding it.
 - No pathos, no clichés, no em dash (—). Keep it under 120 words.
 - Match the tone of the template, but rewrite naturally for this specific role.
+- End with the candidate name on its own line. Do not include phone, email, or messenger links; contacts are appended automatically after your text.
 - Output STRICT JSON only, no prose around it.
 
 ROLE: {{role}}

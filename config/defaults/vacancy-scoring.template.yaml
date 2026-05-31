@@ -1,0 +1,197 @@
+# Vacancy evaluation: hard filters, keyword signals, score routing (single strategy file).
+version: 1
+
+# Stage 1 — hard in/out before any scoring (first matching rule wins).
+filters:
+  blacklist:
+    companies: []
+    domains:
+      - gambling
+      - betting
+      - adult
+    keywords: []
+
+  defaultAction: continue
+
+  rules:
+    - id: ban-gambling
+      when:
+        haystackContainsAny:
+          - gambling
+          - casino
+          - betting
+          - букмекер
+          - ставк
+      action: reject
+      reason: gambling / betting domain
+
+    - id: ban-adult
+      when:
+        haystackContainsAny:
+          - adult
+          - "18+"
+      action: reject
+      reason: adult content
+
+    - id: ban-vue-angular
+      when:
+        haystackContainsAny:
+          - vue
+          - angular
+          - "vue.js"
+      action: reject
+      reason: stack ban (vue/angular)
+
+    - id: ban-mobile-native
+      when:
+        haystackContainsAny:
+          - react native
+          - react-native
+          - reactnative
+          - flutter
+          - "react native developer"
+          - "разработчик react native"
+      action: reject
+      reason: mobile native stack (not in scope)
+
+    # Hybrid SPb: allowed when salary not disclosed.
+    - id: hybrid-spb-no-salary-ok
+      when:
+        remoteType: hybrid
+        locationContainsAny:
+          - санкт-петербург
+          - petersburg
+          - спб
+        salaryDisclosed: false
+      action: pass
+      reason: hybrid SPb, salary not disclosed (allowed)
+
+    # Hybrid SPb: allowed when salary >= 350k gross RUB.
+    - id: hybrid-spb-salary-ok
+      when:
+        remoteType: hybrid
+        locationContainsAny:
+          - санкт-петербург
+          - petersburg
+          - спб
+        salaryDisclosed: true
+        salaryRubGte: 350000
+      action: pass
+      reason: hybrid SPb, salary at or above floor
+
+    - id: hybrid-spb-below-floor
+      when:
+        remoteType: hybrid
+        locationContainsAny:
+          - санкт-петербург
+          - petersburg
+          - спб
+        salaryDisclosed: true
+        salaryRubLt: 350000
+      action: reject
+      reason: hybrid SPb below 350k gross
+
+    - id: hybrid-not-spb
+      when:
+        remoteType: hybrid
+      action: reject
+      reason: hybrid only allowed in SPb (with salary rules)
+
+    - id: onsite-not-spb
+      when:
+        remoteType: onsite
+      action: reject
+      reason: onsite not in scope (remote any; hybrid SPb only)
+
+# Stage 2 — mechanical fit/risk from weighted keywords (fast, no LLM).
+signals:
+  haystack:
+    titleWeight: 2.0
+    keySkillsWeight: 1.5
+    descriptionWeight: 0.6
+    companyWeight: 1.0
+
+  fit:
+    baseline: 30
+    keywords:
+      - { match: react, weight: 18 }
+      - { match: typescript, weight: 16 }
+      - { match: next, weight: 8 }
+      - { match: node, weight: 14 }
+      - { match: nodejs, weight: 14 }
+      - { match: frontend, weight: 14 }
+      - { match: фронтенд, weight: 14 }
+      - { match: fullstack, weight: 10 }
+      - { match: nestjs, weight: 8 }
+      - { match: graphql, weight: 6 }
+      - { match: next.js, weight: 8 }
+    mismatch:
+      - { match: devops, penalty: 25 }
+      - { match: qa, penalty: 25 }
+      - { match: тестировщик, penalty: 25 }
+      - { match: 1с, penalty: 30 }
+      - { match: bitrix, penalty: 30 }
+      - { match: react native, penalty: 40 }
+      - { match: react-native, penalty: 40 }
+      - { match: flutter, penalty: 40 }
+
+  risk:
+    keywords:
+      - { match: "тестовое задание", weight: 15 }
+      - { match: "test assignment", weight: 15 }
+      - { match: crypto, weight: 20 }
+      - { match: крипт, weight: 20 }
+
+  salary:
+    undisclosedScore: 50
+    disclosedScore: 75
+
+  sensitive:
+    - релокац
+    - relocation
+    - гражданств
+    - citizenship
+    - виза
+    - visa
+    - переезд
+
+# Stage 3 — routing mirrors HH workflow: bulk template vs ChatGPT-style premium.
+routing:
+  reject:
+    fitScoreLt: 55
+    riskScoreGt: 40
+
+  manualReview:
+    sensitiveKeyword: true
+    whenAny: []
+
+  premium:
+    companies: []
+    whenAny:
+      - titleContainsAny:
+          - senior
+          - lead
+          - sr
+          - principal
+          - старш
+          - ведущ
+        salaryRubGte: 400000
+      - titleContainsAny:
+          - cto
+          - "tech lead"
+          - "team lead"
+          - "head of"
+          - co-founder
+          - "founding engineer"
+
+  aiScore:
+    fitScoreBetween: [55, 72]
+    whenAny:
+      - remoteType: hybrid
+      - titleContainsAny:
+          - lead
+          - cto
+          - head
+        salaryDisclosed: false
+
+  default: auto

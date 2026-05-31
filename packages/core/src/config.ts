@@ -3,6 +3,7 @@ import path from "node:path";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 import { resolvePaths } from "./paths.ts";
+import { loadEnv } from "./env.ts";
 
 export const searchStrategySchema = z.object({
   version: z.number().default(1),
@@ -29,22 +30,6 @@ export const autoApplyPolicySchema = z.object({
 });
 export type AutoApplyPolicy = z.infer<typeof autoApplyPolicySchema>;
 
-export const manualReviewPolicySchema = z.object({
-  version: z.number().default(1),
-  escalateWhen: z
-    .object({
-      companyInTargetList: z.boolean().default(true),
-      hasQuestionnaire: z.boolean().default(true),
-      mentionsRelocation: z.boolean().default(true),
-      mentionsCitizenshipOrVisa: z.boolean().default(true),
-      mentionsSalaryNegotiationRequired: z.boolean().default(true),
-      priorityAtLeast: z.number().default(85),
-    })
-    .default({}),
-  sensitiveTopics: z.array(z.string()).default([]),
-});
-export type ManualReviewPolicy = z.infer<typeof manualReviewPolicySchema>;
-
 export const blacklistSchema = z.object({
   version: z.number().default(1),
   companies: z.array(z.string()).default([]),
@@ -66,6 +51,7 @@ const gateRuleWhenSchema = z.object({
   salaryRubGte: z.number().optional(),
   salaryRubLt: z.number().optional(),
 });
+export type GateRuleWhen = z.infer<typeof gateRuleWhenSchema>;
 
 export const vacancyGateRuleSchema = z.object({
   id: z.string().min(1),
@@ -88,6 +74,89 @@ export const targetCompaniesSchema = z.object({
 });
 export type TargetCompanies = z.infer<typeof targetCompaniesSchema>;
 
+const weightedKeywordSchema = z.object({
+  match: z.string().min(1),
+  weight: z.number(),
+  note: z.string().optional(),
+});
+
+const mismatchKeywordSchema = z.object({
+  match: z.string().min(1),
+  penalty: z.number(),
+});
+
+export const vacancyScoringSchema = z.object({
+  version: z.number().default(1),
+  filters: z
+    .object({
+      blacklist: blacklistSchema.omit({ version: true }).default({}),
+      defaultAction: z.enum(["continue", "reject"]).default("continue"),
+      rules: z.array(vacancyGateRuleSchema).default([]),
+    })
+    .default({}),
+  signals: z
+    .object({
+      haystack: z
+        .object({
+          titleWeight: z.number().default(2),
+          keySkillsWeight: z.number().default(1.5),
+          descriptionWeight: z.number().default(0.6),
+          companyWeight: z.number().default(1),
+        })
+        .default({}),
+      fit: z
+        .object({
+          baseline: z.number().default(30),
+          keywords: z.array(weightedKeywordSchema).default([]),
+          mismatch: z.array(mismatchKeywordSchema).default([]),
+        })
+        .default({}),
+      risk: z
+        .object({
+          keywords: z.array(weightedKeywordSchema.pick({ match: true, weight: true })).default([]),
+        })
+        .default({}),
+      salary: z
+        .object({
+          undisclosedScore: z.number().default(50),
+          disclosedScore: z.number().default(75),
+        })
+        .default({}),
+      sensitive: z.array(z.string()).default([]),
+    })
+    .default({}),
+  routing: z
+    .object({
+      reject: z
+        .object({
+          fitScoreLt: z.number().optional(),
+          riskScoreGt: z.number().optional(),
+        })
+        .default({}),
+      manualReview: z
+        .object({
+          sensitiveKeyword: z.boolean().default(true),
+          whenAny: z.array(gateRuleWhenSchema).default([]),
+        })
+        .default({}),
+      premium: z
+        .object({
+          companies: z.array(z.string()).default([]),
+          whenAny: z.array(gateRuleWhenSchema).default([]),
+        })
+        .default({}),
+      aiScore: z
+        .object({
+          fitScoreBetween: z.tuple([z.number(), z.number()]).optional(),
+          whenAny: z.array(gateRuleWhenSchema).default([]),
+        })
+        .default({}),
+      default: z.enum(["auto", "ai_score"]).default("auto"),
+    })
+    .default({}),
+});
+export type VacancyScoring = z.infer<typeof vacancyScoringSchema>;
+
 export const resumeThemeSchema = z.object({
   version: z.number().default(1),
   fontFamily: z.string().default("Liberation Sans"),
@@ -101,6 +170,11 @@ export const resumeThemeSchema = z.object({
 });
 export type ResumeTheme = z.infer<typeof resumeThemeSchema>;
 
+function configPaths() {
+  const env = loadEnv();
+  return resolvePaths({ dataDir: env.DATA_DIR, dbPath: env.DATABASE_PATH });
+}
+
 function readYamlOrDefault<S extends z.ZodTypeAny>(
   dataFile: string,
   defaultFile: string,
@@ -111,8 +185,15 @@ function readYamlOrDefault<S extends z.ZodTypeAny>(
   return schema.parse(raw ?? {}) as z.infer<S>;
 }
 
+/** Strategy YAML files seeded by `job-search init`. */
+export const STRATEGY_FILES = [
+  "search-strategy",
+  "auto-apply-policy",
+  "vacancy-scoring",
+] as const;
+
 export function loadSearchStrategy(): SearchStrategy {
-  const p = resolvePaths();
+  const p = configPaths();
   return readYamlOrDefault(
     path.join(p.strategyDir, "search-strategy.yaml"),
     path.join(p.configDefaultsDir, "search-strategy.template.yaml"),
@@ -121,7 +202,7 @@ export function loadSearchStrategy(): SearchStrategy {
 }
 
 export function loadAutoApplyPolicy(): AutoApplyPolicy {
-  const p = resolvePaths();
+  const p = configPaths();
   return readYamlOrDefault(
     path.join(p.strategyDir, "auto-apply-policy.yaml"),
     path.join(p.configDefaultsDir, "auto-apply-policy.template.yaml"),
@@ -129,44 +210,17 @@ export function loadAutoApplyPolicy(): AutoApplyPolicy {
   );
 }
 
-export function loadManualReviewPolicy(): ManualReviewPolicy {
-  const p = resolvePaths();
+export function loadVacancyScoring(): VacancyScoring {
+  const p = configPaths();
   return readYamlOrDefault(
-    path.join(p.strategyDir, "manual-review-policy.yaml"),
-    path.join(p.configDefaultsDir, "manual-review-policy.template.yaml"),
-    manualReviewPolicySchema,
-  );
-}
-
-export function loadBlacklist(): Blacklist {
-  const p = resolvePaths();
-  return readYamlOrDefault(
-    path.join(p.strategyDir, "blacklist.yaml"),
-    path.join(p.configDefaultsDir, "blacklist.template.yaml"),
-    blacklistSchema,
-  );
-}
-
-export function loadVacancyGates(): VacancyGates {
-  const p = resolvePaths();
-  return readYamlOrDefault(
-    path.join(p.strategyDir, "vacancy-gates.yaml"),
-    path.join(p.configDefaultsDir, "vacancy-gates.template.yaml"),
-    vacancyGatesSchema,
-  );
-}
-
-export function loadTargetCompanies(): TargetCompanies {
-  const p = resolvePaths();
-  return readYamlOrDefault(
-    path.join(p.strategyDir, "target-companies.yaml"),
-    path.join(p.configDefaultsDir, "target-companies.template.yaml"),
-    targetCompaniesSchema,
+    path.join(p.strategyDir, "vacancy-scoring.yaml"),
+    path.join(p.configDefaultsDir, "vacancy-scoring.template.yaml"),
+    vacancyScoringSchema,
   );
 }
 
 export function loadResumeTheme(): ResumeTheme {
-  const p = resolvePaths();
+  const p = configPaths();
   return readYamlOrDefault(
     path.join(p.resumeDir, "resume-theme.yaml"),
     path.join(p.configDefaultsDir, "resume-theme.template.yaml"),

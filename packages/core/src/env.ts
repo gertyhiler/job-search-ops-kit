@@ -7,13 +7,18 @@ const envSchema = z.object({
   DATA_DIR: z.string().default("data"),
   DATABASE_PATH: z.string().default("data/db/job-search.sqlite"),
   POLL_INTERVAL_SEC: z.coerce.number().int().positive().default(900),
-  FAST_MODEL: z.string().default("cursor.composer_2_5_fast"),
-  DRAFT_MODEL: z.string().default("codex.gpt_5_2"),
-  REASONING_MODEL: z.string().default("codex.gpt_5_2"),
+  FAST_MODEL: z.string().default("cursor.composer-2.5-fast"),
+  DRAFT_MODEL: z.string().default("codex.gpt-5.2"),
+  REASONING_MODEL: z.string().default("codex.gpt-5.2"),
   AI_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
   AI_MAX_RETRIES: z.coerce.number().int().min(0).default(1),
   TELEGRAM_BOT_TOKEN: z.string().default(""),
   TELEGRAM_CHAT_ID: z.string().default(""),
+  /** Long-poll for inline buttons (/status, approve). Off = outbound notify only. */
+  TELEGRAM_POLLING: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true"),
   /** Playwright context defaults. Empty USER_AGENT = Desktop Chrome at runtime. */
   PLAYWRIGHT_USER_AGENT: z.string().default(""),
   PLAYWRIGHT_LOCALE: z.string().default("en-US"),

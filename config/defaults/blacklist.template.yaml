@@ -1,8 +1,0 @@
-# Companies and domains to never apply to. Matched case-insensitively.
-version: 1
-companies: []
-domains:
-  - gambling
-  - betting
-  - adult
-keywords: []

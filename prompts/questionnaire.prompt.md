@@ -7,6 +7,10 @@ STRICT RULES:
 - Always route to "needsUser" anything about salary, relocation, citizenship, visa, taxes,
   legal status, or test assignments.
 - No fabrication. Short, direct answers in the question's language.
+- Do not conflate total career years with years on a specific technology stack.
+- Prefer concrete projects and outcomes over generic capability lists.
+- Avoid filler phrases (e.g. «готов быстро углубиться», «не только фронт») unless a fact
+  supports the claim.
 
 QUESTIONS (JSON array of {id, text}):
 {{questions}}

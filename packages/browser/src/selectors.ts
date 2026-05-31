@@ -32,7 +32,20 @@ export const HH = {
     '[data-qa="vacancy-response-letter-submit"]',
   ],
   submitButtonText: ["Откликнуться", "Отправить"],
-  successText: ["Резюме доставлено", "Вы откликнулись", "Отклик доставлен"],
+  successText: [
+    "Резюме доставлено",
+    "Вы откликнулись",
+    "Отклик доставлен",
+    "Отклик успешно отправлен",
+    "Отклик отправлен",
+  ],
+  crossCountryText: ["вакансию в другой стране", "другой стран"],
+  crossCountryConfirmText: ["Все равно откликнуться", "Всё равно откликнуться"],
+  resumeOptionSelectors: [
+    '[data-qa*="resume-card"]',
+    '[data-qa*="resume-selector"]',
+    '[data-qa*="resume-item"]',
+  ],
   questionnaireText: [
     "Заполните анкету",
     "ответьте на вопрос",

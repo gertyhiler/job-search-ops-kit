@@ -206,16 +206,11 @@ export async function classifyVacancyWithAi(
 
     return { score, usedAi: true };
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     deps.logger?.warn(
-      {
-        error: error instanceof Error ? error.message : String(error),
-        vacancy: vacancy.externalId,
-      },
-      "Vacancy AI classification failed; routing to manual_review",
+      { error: message, vacancy: vacancy.externalId },
+      "Vacancy AI classification failed; will retry on next score tick",
     );
-    return {
-      score: fallbackScore("AI classification failed"),
-      usedAi: false,
-    };
+    throw error instanceof Error ? error : new Error(message);
   }
 }

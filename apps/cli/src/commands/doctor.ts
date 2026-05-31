@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { loadEnv, resolvePaths } from "@job-search/core";
+import { loadEnv, resolvePaths, STRATEGY_FILES } from "@job-search/core";
 import { openAndMigrate } from "@job-search/db";
 import { isTypstAvailable } from "@job-search/resume";
 import { chromium } from "playwright";
@@ -112,6 +112,33 @@ export function runDoctor(): number {
       : "run `job-search hh:login`",
   });
 
+  const lockPath = path.join(p.dataDir, ".pipeline.lock");
+  if (existsSync(lockPath)) {
+    const pid = Number(readFileSync(lockPath, "utf8").trim());
+    let alive = false;
+    if (pid > 0) {
+      try {
+        process.kill(pid, 0);
+        alive = true;
+      } catch {
+        alive = false;
+      }
+    }
+    checks.push({
+      name: "pipeline lock",
+      status: alive ? "warn" : "ok",
+      detail: alive
+        ? `running (pid ${pid}) — stop before second \`pnpm dev\``
+        : "stale lock cleaned on next start",
+    });
+  } else {
+    checks.push({
+      name: "pipeline lock",
+      status: "ok",
+      detail: "no running pipeline",
+    });
+  }
+
   // profile / resume / strategy files
   const profileOk = existsSync(path.join(p.profileDir, "experience-facts.md"));
   checks.push({
@@ -125,13 +152,16 @@ export function runDoctor(): number {
     status: resumeOk ? "ok" : "warn",
     detail: resumeOk ? "present" : "run init + /init skill",
   });
-  const strategyOk = existsSync(
-    path.join(p.strategyDir, "search-strategy.yaml"),
+  const missingStrategy = STRATEGY_FILES.filter(
+    (name) => !existsSync(path.join(p.strategyDir, `${name}.yaml`)),
   );
   checks.push({
     name: "strategy files",
-    status: strategyOk ? "ok" : "warn",
-    detail: strategyOk ? "present" : "run init",
+    status: missingStrategy.length === 0 ? "ok" : "warn",
+    detail:
+      missingStrategy.length === 0
+        ? STRATEGY_FILES.map((n) => `${n}.yaml`).join(", ")
+        : `run init (missing: ${missingStrategy.join(", ")})`,
   });
 
   const icon = (s: Status): string =>

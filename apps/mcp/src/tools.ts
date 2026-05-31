@@ -5,6 +5,7 @@ import {
   loadResumeTheme,
   readJsonFileOr,
   readTextFileOr,
+  STRATEGY_FILES,
   writeTextFile,
 } from "@job-search/core";
 import {
@@ -40,15 +41,9 @@ const PROFILE_FILES = new Set([
   "experience-facts",
   "evidence",
   "resume-gaps",
+  "prompt-additions",
 ]);
-const STRATEGY_FILES = new Set([
-  "search-strategy",
-  "auto-apply-policy",
-  "manual-review-policy",
-  "blacklist",
-  "target-companies",
-  "vacancy-gates",
-]);
+const STRATEGY_FILE_SET = new Set<string>(STRATEGY_FILES);
 const PROMPT_FILES = new Set(["vacancy-scoring"]);
 
 function vacancySummary(row: ReturnType<typeof getVacancyById>): unknown {
@@ -153,7 +148,7 @@ export function buildTools(): ToolDef[] {
     {
       name: "write_profile",
       description:
-        "Overwrite a profile markdown file. Allowed: user-profile, career-goals, constraints, compensation, experience-facts, evidence, resume-gaps.",
+        "Overwrite a profile markdown file. Allowed: user-profile, career-goals, constraints, compensation, experience-facts, evidence, resume-gaps, prompt-additions.",
       inputShape: { file: z.string(), content: z.string() },
       handler: (args, ctx) => {
         const file = args.file as string;
@@ -172,11 +167,11 @@ export function buildTools(): ToolDef[] {
     {
       name: "write_strategy",
       description:
-        "Overwrite a strategy YAML file. Allowed: search-strategy, auto-apply-policy, manual-review-policy, blacklist, target-companies, vacancy-gates.",
+        "Overwrite a strategy YAML file. Allowed: search-strategy, auto-apply-policy, vacancy-scoring.",
       inputShape: { file: z.string(), content: z.string() },
       handler: (args, ctx) => {
         const file = args.file as string;
-        if (!STRATEGY_FILES.has(file))
+        if (!STRATEGY_FILE_SET.has(file))
           throw new Error(`Disallowed strategy file: ${file}`);
         const dest = path.join(ctx.paths.strategyDir, `${file}.yaml`);
         writeTextFile(dest, args.content as string);

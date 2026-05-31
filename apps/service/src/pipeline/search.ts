@@ -9,6 +9,7 @@ import {
 } from "@job-search/db";
 import { recordEvent } from "@job-search/memory";
 import type { PipelineContext } from "../context.ts";
+import { logStageStart, readPipelineBacklog } from "./status.ts";
 
 export interface SearchReport {
   found: number;
@@ -20,6 +21,7 @@ export async function runSearch(ctx: PipelineContext): Promise<SearchReport> {
   const strategy = loadSearchStrategy();
   const adapters = createAdapters(ctx.env, strategy, ctx.paths);
   const report: SearchReport = { found: 0, created: 0, updated: 0 };
+  logStageStart(ctx, "search", { sources: adapters.map((a) => a.source) });
 
   for (const adapter of adapters) {
     const cursorIso = getSourceCursor(ctx.db, adapter.source);
@@ -85,6 +87,9 @@ export async function runSearch(ctx: PipelineContext): Promise<SearchReport> {
     if (maxPublished) setSourceCursor(ctx.db, adapter.source, maxPublished);
   }
 
-  ctx.logger.info({ report }, "Search stage finished");
+  ctx.logger.info(
+    { report, backlog: readPipelineBacklog(ctx) },
+    report.found > 0 ? "Search tick finished" : "Search tick idle",
+  );
   return report;
 }

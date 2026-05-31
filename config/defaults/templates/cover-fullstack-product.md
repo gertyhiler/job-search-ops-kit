@@ -1,8 +1,10 @@
 Здравствуйте!
 
-Заинтересовала вакансия {{role}}{{company_suffix}}. Frontend-heavy fullstack на React/TypeScript с уверенной работой по API и продуктовыми задачами от идеи до релиза.
+Заинтересовала вакансия {{role}}{{company_suffix}}. Frontend-heavy fullstack: React/TypeScript на клиенте, уверенная работа с API, доведение фич от постановки до релиза.
 
 {{facts}}
 
-Буду рад обсудить ваши задачи и формат сотрудничества.
+Готов обсудить ваши задачи и формат сотрудничества.
+
 {{candidate_name}}
+{{contact_footer}}

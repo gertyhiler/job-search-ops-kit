@@ -25,9 +25,8 @@ Cron queues (interval from `POLL_INTERVAL_SEC`; downstream queues at `min(interv
 
 - **search-queue** — for each enabled connector: `fetchNewJobs(since)` -> `normalize` ->
   dedupe by content hash -> upsert (`normalized`) + events; advance source cursor.
-- **score-queue** — `normalized` -> mechanical `vacancy-gates.yaml` (+ blacklist) ->
-  optional LLM classify via `data/prompts/vacancy-scoring.md` -> apply-mode ->
-  `scored`/`classified`.
+- **score-queue** — `normalized` -> `vacancy-scoring.yaml` (filters + mechanical signals +
+  routing) -> optional LLM classify for `ai_score` only -> `scored`/`classified`.
 - **package-queue** — `classified(auto)` -> select resume variant + cover template, fill
   via AI subprocess under the evidence policy -> store letter + artifacts -> `packaged`.
 - **apply-queue** — `packaged` that pass auto-apply policy -> Playwright apply
@@ -82,8 +81,9 @@ Allowed without confirmation: search, read, store, normalize, score, generate a 
 cover letter, pick a standard resume, auto-apply to ordinary vacancies that pass policy,
 log, notify, enqueue exceptions.
 
-Requires confirmation: high-value / target-company vacancies, non-standard
-questionnaires, anything touching salary/relocation/citizenship/visa/taxes/legal status,
+Requires confirmation: high-value / target-company vacancies, **chat-agent HH submit or
+marking applied**, employer questionnaires answered in chat, anything touching
+salary/relocation/citizenship/visa/taxes/legal status,
 HR replies, changing the HH profile or resume, test assignments, low-confidence cases.
 
 Forbidden: bypassing CAPTCHA/antibot, IP rotation to evade limits, spamming one company,

@@ -144,7 +144,7 @@ export type Insight = z.infer<typeof insightSchema>;
 export const consolidationOutputSchema = z.object({
   insights: z.array(insightSchema).default([]),
   resumeGapSuggestions: z.array(z.string()).default([]),
-  metrics: z.record(z.union([z.number(), z.string()])).default({}),
+  metrics: z.record(z.unknown()).default({}),
   recommendations: z.array(z.string()).default([]),
 });
 export type ConsolidationOutput = z.infer<typeof consolidationOutputSchema>;

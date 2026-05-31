@@ -289,6 +289,27 @@ export function listVacanciesByStatus(
   ).all(status, limit) as VacancyRow[];
 }
 
+export function countVacancies(
+  db: DB,
+  filter: { status?: PipelineStatus; applyMode?: ApplyMode } = {},
+): number {
+  const clauses: string[] = [];
+  const params: unknown[] = [];
+  if (filter.status) {
+    clauses.push("pipeline_status = ?");
+    params.push(filter.status);
+  }
+  if (filter.applyMode) {
+    clauses.push("apply_mode = ?");
+    params.push(filter.applyMode);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  const row = prep(db, `SELECT COUNT(*) AS n FROM vacancies ${where}`).get(
+    ...params,
+  ) as { n: number };
+  return row.n;
+}
+
 export function setVacancyStatus(
   db: DB,
   id: number,
@@ -298,6 +319,72 @@ export function setVacancyStatus(
     db,
     `UPDATE vacancies SET pipeline_status = ?, updated_at = ? WHERE id = ?`,
   ).run(status, nowIso(), id);
+}
+
+/** Marker stored in score_risks_json when score AI failed before retry logic existed. */
+export const SCORE_AI_FAILURE_RISK = "AI classification failed";
+
+/** Reset transient score failures back to normalized for the next score tick. */
+export function requeueScoreFailures(db: DB, limit = 500): number {
+  const rows = prep(
+    db,
+    `SELECT id FROM vacancies
+     WHERE score_risks_json LIKE @pattern
+       AND pipeline_status = 'queued'
+     ORDER BY id ASC
+     LIMIT @limit`,
+  ).all({ pattern: `%${SCORE_AI_FAILURE_RISK}%`, limit }) as { id: number }[];
+
+  if (rows.length === 0) return 0;
+
+  const ts = nowIso();
+  const reset = prep(
+    db,
+    `UPDATE vacancies SET
+      pipeline_status = 'normalized',
+      fit_score = NULL, salary_score = NULL, risk_score = NULL,
+      priority_score = NULL, apply_mode = NULL,
+      score_reasons_json = NULL, score_risks_json = NULL,
+      updated_at = @ts
+     WHERE id = @id`,
+  );
+  for (const row of rows) reset.run({ id: row.id, ts });
+
+  const placeholders = rows.map(() => "?").join(",");
+  prep(
+    db,
+    `UPDATE queues SET status = 'resolved', resolved_at = ?, updated_at = ?
+     WHERE type = 'manual_review' AND entity_type = 'vacancy'
+       AND entity_id IN (${placeholders}) AND status = 'open'`,
+  ).run(ts, ts, ...rows.map((r) => r.id));
+
+  return rows.length;
+}
+
+/** Reset vacancies stuck mid-apply so the apply stage can retry them. */
+export function requeueStuckApplying(
+  db: DB,
+  stuckMinutes = 30,
+  limit = 50,
+): number {
+  const cutoff = new Date(Date.now() - stuckMinutes * 60_000).toISOString();
+  const rows = prep(
+    db,
+    `SELECT id FROM vacancies
+     WHERE pipeline_status = 'applying' AND updated_at < @cutoff
+     ORDER BY id ASC
+     LIMIT @limit`,
+  ).all({ cutoff, limit }) as { id: number }[];
+
+  for (const row of rows) {
+    setVacancyStatus(db, row.id, "packaged");
+    const app = getApplicationByVacancy(db, row.id);
+    if (app?.status === "applying") {
+      updateApplicationStatus(db, app.id, { status: "packaged" });
+    }
+  }
+
+  return rows.length;
 }
 
 export function updateVacancyScore(
