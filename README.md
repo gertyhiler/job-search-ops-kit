@@ -23,7 +23,7 @@ It ships **empty**: there is no personal data in the repo. After `git clone` you
 - `packages/core` — env/config/paths, logger, the AI-CLI subprocess runner.
 - `packages/db` — SQLite (better-sqlite3 + Drizzle) schema, migrations, repositories.
 - `packages/connectors` — one adapter per board (HH.ru) with normalization + dedupe.
-- `packages/scoring` — deterministic fit/salary/risk/priority scoring + apply-mode classifier.
+- `packages/scoring` — mechanical vacancy gates (YAML/blacklist) + apply gate; fit/risk classify via LLM in the score pipeline.
 - `packages/browser` — Playwright login + auto-apply with full error taxonomy.
 - `packages/resume` — Typst renderer (JSON master resume -> PDF).
 - `packages/telegram` — grammy notifier + inline-button approvals.
