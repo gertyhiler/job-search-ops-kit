@@ -28,6 +28,8 @@ Memory & resume
 Inspect
   vacancies list [--status s --mode m --limit n]
   vacancies show <id>
+  vacancies requeue-score --recover-audit [--score]
+  vacancies requeue-score --ids 1,2,3 [--score]
   applications list
   funnel
   queue:review [--type t]
@@ -109,6 +111,11 @@ async function main(): Promise<void> {
     case "vacancies":
       if (args.positionals[0] === "show")
         run.vacancyShow({ ...args, positionals: args.positionals.slice(1) });
+      else if (args.positionals[0] === "requeue-score")
+        await run.vacanciesRequeueScore({
+          ...args,
+          positionals: args.positionals.slice(1),
+        });
       else run.vacanciesList(args);
       return;
     case "applications":

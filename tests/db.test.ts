@@ -9,6 +9,7 @@ import {
   logEvent,
   openAndMigrate,
   requeueScoreFailures,
+  requeueVacanciesForRescore,
   SCORE_AI_FAILURE_RISK,
   setVacancyStatus,
   updateVacancyScore,
@@ -93,6 +94,27 @@ describe("db layer", () => {
     expect(requeueScoreFailures(db)).toBe(1);
     expect(listVacanciesByStatus(db, "normalized").length).toBe(1);
     expect(getFunnel(db).queuesByType.manual_review ?? 0).toBe(0);
+    db.close();
+  });
+
+  it("requeues rejected vacancies for rescore", () => {
+    const db = openAndMigrate(":memory:");
+    const company = upsertCompany(db, { source: "hh", name: "Acme" });
+    const v = vac();
+    const { id } = upsertVacancy(db, v, company.id, computeContentHash(v));
+    updateVacancyScore(db, id, {
+      fitScore: 40,
+      salaryScore: 50,
+      riskScore: 30,
+      priorityScore: 45,
+      applyMode: "reject",
+      reasons: [],
+      risks: [],
+    });
+    setVacancyStatus(db, id, "rejected");
+
+    expect(requeueVacanciesForRescore(db, [id])).toBe(1);
+    expect(listVacanciesByStatus(db, "normalized").length).toBe(1);
     db.close();
   });
 });

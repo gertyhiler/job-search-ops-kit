@@ -14,6 +14,7 @@ import {
   listQueue,
   listVacancies,
   openAndMigrate,
+  requeueVacanciesForRescore,
 } from "@job-search/db";
 import { loginBootstrap } from "@job-search/browser";
 import { runConsolidation } from "@job-search/memory";
@@ -30,6 +31,7 @@ import {
 } from "@job-search/service";
 import { callToolOnce, listToolNames, startMcpServer } from "@job-search/mcp";
 import type { ParsedArgs } from "../args.ts";
+import { findRecoverableRejectedVacancyIds } from "../recover-rejected.ts";
 
 function printJson(value: unknown): void {
   console.log(JSON.stringify(value, null, 2));
@@ -224,6 +226,39 @@ export function vacancyShow(args: ParsedArgs): void {
   const id = Number(args.positionals[0]);
   printJson(getVacancyById(db, id) ?? null);
   db.close();
+}
+
+export async function vacanciesRequeueScore(args: ParsedArgs): Promise<void> {
+  const { paths } = envPaths();
+  const db = openAndMigrate(paths.dbPath);
+
+  let ids: number[];
+  const idsFlag = args.flags.ids as string | undefined;
+  if (idsFlag) {
+    ids = idsFlag
+      .split(",")
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isFinite(n) && n > 0);
+  } else if (args.flags["recover-audit"]) {
+    ids = findRecoverableRejectedVacancyIds(db);
+  } else {
+    console.error(
+      "Usage: job-search vacancies requeue-score --recover-audit | --ids 1,2,3 [--score]",
+    );
+    db.close();
+    process.exitCode = 1;
+    return;
+  }
+
+  const requeued = requeueVacanciesForRescore(db, ids);
+  printJson({ requested: ids.length, requeued, ids });
+  db.close();
+
+  if (args.flags.score) {
+    const ctx = createContext();
+    printJson({ score: await runScore(ctx) });
+    ctx.db.close();
+  }
 }
 
 export function applicationsList(): void {

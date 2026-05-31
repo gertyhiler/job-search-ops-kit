@@ -361,6 +361,41 @@ export function requeueScoreFailures(db: DB, limit = 500): number {
   return rows.length;
 }
 
+/** Reset rejected/scored vacancies back to normalized for a fresh score tick. */
+export function requeueVacanciesForRescore(db: DB, ids: number[]): number {
+  if (ids.length === 0) return 0;
+
+  const existing = prep(
+    db,
+    `SELECT id FROM vacancies WHERE id IN (${ids.map(() => "?").join(",")})`,
+  ).all(...ids) as { id: number }[];
+  if (existing.length === 0) return 0;
+
+  const ts = nowIso();
+  const reset = prep(
+    db,
+    `UPDATE vacancies SET
+      pipeline_status = 'normalized',
+      fit_score = NULL, salary_score = NULL, risk_score = NULL,
+      priority_score = NULL, apply_mode = NULL,
+      score_reasons_json = NULL, score_risks_json = NULL,
+      updated_at = @ts
+     WHERE id = @id`,
+  );
+  for (const row of existing) reset.run({ id: row.id, ts });
+
+  const requeuedIds = existing.map((r) => r.id);
+  const placeholders = requeuedIds.map(() => "?").join(",");
+  prep(
+    db,
+    `UPDATE queues SET status = 'resolved', resolved_at = ?, updated_at = ?
+     WHERE entity_type = 'vacancy'
+       AND entity_id IN (${placeholders}) AND status = 'open'`,
+  ).run(ts, ts, ...requeuedIds);
+
+  return requeuedIds.length;
+}
+
 /** Reset vacancies stuck mid-apply so the apply stage can retry them. */
 export function requeueStuckApplying(
   db: DB,
