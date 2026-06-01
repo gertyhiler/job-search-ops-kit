@@ -47,7 +47,8 @@ Human-domain data lives as files under `data/` (gitignored): `profile/`, `strate
 
 Key profile files (under `data/profile/`):
 
-- `user-profile.md` — short positioning summary; safe to load broadly into agent context.
+- `user-profile.md` — short positioning summary; injected at chat session start via
+  `.cursor/hooks.json` / `.codex/hooks.json` (`read_profile` MCP path → hook stdout).
 - `use-cases.md` — curated library of 8–12 reusable cases for cover letters (pick 1–2 per letter).
 - `experience-facts.md` — atomic, canonical facts; used for questionnaires and to back profile/use-cases.
 - `evidence.md` — supporting links/notes behind claims; backs facts/use-cases.
@@ -69,6 +70,9 @@ Key profile files (under `data/profile/`):
 - **Programmatic only.** The chat agent is forbidden (see `AGENTS.md`) from editing
   anything under `data/memory/`, the SQLite DB, or events. All writes go through the
   memory CLI / MCP tools, which validate input.
+- **Session start.** `scripts/hooks/session-start.ts` bootstraps `data/`, calls
+  `read_profile`, and returns `user-profile` as initial context (`additional_context` on
+  Cursor, `hookSpecificOutput.additionalContext` on Codex).
 - **Capture.** Pipeline steps append `events` (DB) and journal lines
   (`data/memory/journal/*.jsonl`). Cursor/Codex `Stop` hooks drop session transcripts
   into `data/memory/inbox/`.

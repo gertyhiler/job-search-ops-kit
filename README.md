@@ -70,7 +70,8 @@ privacy guard blocks secrets and personal data from ever being committed.
 
 Key profile files:
 
-- `data/profile/user-profile.md` — short positioning summary.
+- `data/profile/user-profile.md` — short positioning summary (auto-injected at session
+  start by Cursor/Codex hooks via `read_profile`).
 - `data/profile/use-cases.md` — curated cases used for cover letters (1–2 per letter).
 - `data/profile/experience-facts.md` + `data/profile/evidence.md` — canonical truth store behind claims.
 
