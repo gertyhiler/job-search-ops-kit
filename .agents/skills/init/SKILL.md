@@ -22,7 +22,7 @@ First run, or whenever the user wants to (re)configure the system from scratch.
 ## Outputs (written ONLY via MCP tools, never by direct file edit)
 
 - `write_profile` for: `user-profile`, `career-goals`, `constraints`, `compensation`,
-  `experience-facts`, `resume-gaps`.
+  `experience-facts`, `resume-gaps`, `use-cases`.
 - `append_evidence` for supporting evidence (links, metrics, repos).
 - `write_strategy` for exactly **three** strategy files (see below).
 - `write_prompt` for: `vacancy-scoring` — the LLM prompt in
@@ -122,9 +122,9 @@ Read all three strategy files + `compensation.md` + `constraints.md` and confirm
    floor/target, remote/hybrid/relocation, work authorization, undesired domains/companies,
    known target employers, English level, and what is safe to say in cover letters.
 4. Write `experience-facts` as a bullet list of true FACTs; put links/metrics in evidence.
-5. Write profile files (`user-profile`, `constraints`, `compensation`, `prompt-additions`, …).
-   `prompt-additions.md` holds candidate-specific tone, contacts, and anti-slop rules
-   (sections `## all`, `## agent`, `## cover-letter`, `## questionnaire`); repo prompts stay generic.
+5. Write profile files (`user-profile`, `constraints`, `compensation`, `use-cases`, …).
+   `use-cases.md` holds 8–12 curated, vacancy-reusable cases (ammo) for cover letters.
+   Keep it factual: context → task → actions → result → keywords, and include "when relevant" signals.
 6. Write **all three strategy files** using the coordination checklist above.
 7. Write `vacancy-scoring` **prompt** (LLM) for ambiguous cases only — shorter than before,
    focused on fit nuance not duplicate gate rules.
@@ -148,7 +148,7 @@ Most vacancies never hit the LLM classify step. Personal nuance belongs in
 
 ## Files to read
 
-`data/profile/*` (including `prompt-additions.md`), `data/strategy/*` (3 files), `data/prompts/vacancy-scoring.md`,
+`data/profile/*` (including `use-cases.md`), `data/strategy/*` (3 files), `data/prompts/vacancy-scoring.md`,
 `data/resume/master-resume.json`.
 
 ## Safety

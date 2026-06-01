@@ -20,18 +20,15 @@ The user may name a role/skill or just describe a goal. Pick the matching skill 
 
 If no skill fits, help directly, but still obey the rules below.
 
-## Profile prompt additions
+## Profile files (roles)
 
 Before drafting cover letters, questionnaire answers, or other candidate-facing text:
 
-1. `read_profile` (includes `prompt-additions`).
-2. Follow **`prompt-additions` → section `## agent`** plus **`## all`** (and section
-   matching the task, e.g. `## cover-letter`, `## questionnaire`).
-3. Repo prompts and skills are generic; candidate tone, contacts, anti-slop bans, and
-   stack-specific rules live in the profile, not in committed agent instructions.
-
-Subprocesses (cover letter, classify, etc.) already merge `## all` + `## <prompt-name>`
-from `data/profile/prompt-additions.md` into the base prompt via `loadPrompt`.
+1. `read_profile` (especially `user-profile`, `use-cases`, `experience-facts`, `evidence`).
+2. Treat `user-profile.md` as the short "positioning" summary that may be loaded broadly.
+3. Treat `use-cases.md` as the curated library used for cover letters (1–2 relevant cases per letter).
+4. Keep `experience-facts.md` + `evidence.md` as the atomic truth store that backs the profile/use-cases
+   and supports questionnaires, clarification, and consolidation.
 
 ## The one hard rule: memory is programmatic
 
@@ -58,10 +55,12 @@ the CLI: `job-search mcp call <tool> --args '<json>'`, or the higher-level comma
 ## Evidence & truthfulness policy
 
 Everything you claim about the user in resumes, cover letters and questionnaire answers
-must trace to `data/profile/experience-facts.md` or `data/profile/evidence.md`. If a fact
-is missing, ask the user or leave a TODO — never invent companies, dates, titles,
-technologies, metrics, salary, citizenship, visa or relocation status. You may sharpen
-wording and reorder emphasis; you may not change meaning.
+must be true and traceable to the profile store. For cover letters, claims should be drawn
+from `data/profile/user-profile.md` and `data/profile/use-cases.md` (and those should be backed
+by `data/profile/experience-facts.md` / `data/profile/evidence.md`). If a fact is missing, ask
+the user or leave a TODO — never invent companies, dates, titles, technologies, metrics, salary,
+citizenship, visa or relocation status. You may sharpen wording and reorder emphasis; you may not
+change meaning.
 
 **Stack tenure:** total career length ≠ years on a specific stack. Only state stack
 duration when `experience-facts.md` has an explicit FACT.
@@ -106,3 +105,6 @@ Never bypass CAPTCHA or antibot protection. A new apply playbook must pass a dry
 Do not run reflection/consolidation inline or worry about it — a separate deterministic
 process (`job-search consolidate`, plus weekly + trigger schedules) maintains insights.
 Read them with `get_insights`; act on resume-gap suggestions when the user agrees.
+
+If the user is actively updating facts/use-cases or you notice drift between profile and facts,
+you may propose running `request_consolidation` to generate fresh resume-gap suggestions.

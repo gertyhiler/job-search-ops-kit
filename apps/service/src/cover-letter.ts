@@ -45,23 +45,106 @@ function chooseTemplate(v: NormalizedVacancy): { id: string; file: string } {
   return { id: "generic", file: "cover-generic.md" };
 }
 
-function readFacts(paths: Paths): { full: string; bullets: string[] } {
-  const facts = readTextFileOr(
-    path.join(paths.profileDir, "experience-facts.md"),
-    "",
-  );
-  const evidence = readTextFileOr(
-    path.join(paths.profileDir, "evidence.md"),
-    "",
-  );
-  const full = [facts, evidence].filter(Boolean).join("\n\n").trim();
-  const bullets = facts
-    .split("\n")
-    .map((l) => l.trim())
-    .filter((l) => l.startsWith("-") && !l.toUpperCase().includes("TODO"))
-    .map((l) => l.replace(/^-\s*(FACT:)?\s*/i, "").trim())
-    .filter(Boolean);
-  return { full, bullets };
+interface UseCase {
+  id: string;
+  title: string;
+  signals: string[];
+  bullets: string[];
+}
+
+function readUserProfile(paths: Paths): string {
+  return readTextFileOr(path.join(paths.profileDir, "user-profile.md"), "").trim();
+}
+
+function parseUseCases(markdown: string): UseCase[] {
+  const cases: UseCase[] = [];
+  const parts = markdown.split(/^##\s+/m).slice(1);
+  for (const part of parts) {
+    const newline = part.indexOf("\n");
+    if (newline === -1) continue;
+    const header = part.slice(0, newline).trim();
+    const body = part.slice(newline + 1);
+
+    const [idRaw, ...titleParts] = header.split(":");
+    const id = (idRaw || "").trim();
+    if (!id.toUpperCase().startsWith("UC-")) continue;
+    const title = titleParts.join(":").trim() || header.replace(/^UC-[^:]+:\s*/, "");
+
+    const lines = body.split("\n").map((l) => l.trim());
+    const signals: string[] = [];
+    const bullets: string[] = [];
+
+    let inSignals = false;
+    let inBullets = false;
+    for (const line of lines) {
+      if (/^when relevant/i.test(line)) {
+        inSignals = true;
+        inBullets = false;
+        continue;
+      }
+      if (/^bullets:/i.test(line)) {
+        inBullets = true;
+        inSignals = false;
+        continue;
+      }
+      if (/^###\s+/i.test(line) || /^##\s+/i.test(line)) {
+        inSignals = false;
+        inBullets = false;
+      }
+      if (!line.startsWith("-")) continue;
+      const value = line.replace(/^-+\s*/, "").trim();
+      if (!value || value.toUpperCase().includes("TODO")) continue;
+      if (inSignals) signals.push(value);
+      else if (inBullets) bullets.push(value);
+    }
+
+    if (signals.length === 0 && bullets.length === 0) continue;
+    cases.push({ id, title, signals, bullets });
+  }
+  return cases;
+}
+
+function readUseCases(paths: Paths): { raw: string; cases: UseCase[] } {
+  const raw = readTextFileOr(path.join(paths.profileDir, "use-cases.md"), "").trim();
+  return { raw, cases: raw ? parseUseCases(raw) : [] };
+}
+
+function pickUseCaseBullets(
+  vacancy: NormalizedVacancy,
+  useCases: UseCase[],
+): { bullets: string[]; used: string[] } {
+  const haystack = `${vacancy.title}\n${vacancy.companyName}\n${vacancy.keySkills.join(" ")}\n${vacancy.description}`.toLowerCase();
+  const scored = useCases
+    .map((uc) => {
+      const signals = uc.signals.length ? uc.signals : [uc.title];
+      let score = 0;
+      for (const s of signals) {
+        const needle = s.toLowerCase();
+        if (!needle) continue;
+        if (haystack.includes(needle)) score += 3;
+      }
+      // Bonus for bullet keyword overlap (cheap heuristic).
+      for (const b of uc.bullets.slice(0, 6)) {
+        const words = b
+          .toLowerCase()
+          .split(/[^a-zа-я0-9+.#-]+/i)
+          .filter((w) => w.length >= 4)
+          .slice(0, 10);
+        for (const w of words) if (haystack.includes(w)) score += 1;
+      }
+      return { uc, score };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  const top = scored.slice(0, 2).map((x) => x.uc);
+  const out: string[] = [];
+  const used: string[] = [];
+  for (const uc of top) {
+    used.push(uc.id);
+    for (const b of uc.bullets.slice(0, 3)) out.push(b);
+  }
+  return { bullets: out.slice(0, 5), used };
 }
 
 export function buildContactFooter(resume: Resume | null): string {
@@ -139,7 +222,8 @@ export async function generateCoverLetter(
     path.join(paths.templatesDir, tpl.file),
     "",
   );
-  const { full, bullets } = readFacts(paths);
+  const userProfile = readUserProfile(paths);
+  const { raw: useCasesRaw, cases: useCases } = readUseCases(paths);
   const name = candidateName(paths);
   const companySuffix = vacancy.companyName
     ? ` в компанию «${vacancy.companyName}»`
@@ -147,10 +231,8 @@ export async function generateCoverLetter(
 
   // Deterministic fallback (also used when no AI CLI is available or it fails).
   const fallback = (): CoverLetterResult => {
-    const factLines = bullets
-      .slice(0, 3)
-      .map((b) => `- ${b}`)
-      .join("\n");
+    const picked = pickUseCaseBullets(vacancy, useCases);
+    const factLines = picked.bullets.map((b) => `- ${b}`).join("\n");
     const text = finalizeCoverLetterText(
       fillTemplate(
         templateText ||
@@ -158,7 +240,7 @@ export async function generateCoverLetter(
         {
           role: vacancy.title,
           company_suffix: companySuffix,
-          facts: factLines,
+          facts: factLines || "- Готов обсудить, какие use-cases из моего опыта лучше всего совпадают с вашими задачами.",
           candidate_name: name,
           contact_footer: readContactFooter(paths),
         },
@@ -169,13 +251,13 @@ export async function generateCoverLetter(
     return {
       text,
       templateId: tpl.id,
-      usedFacts: bullets.slice(0, 3),
+      usedFacts: picked.used,
       usedAi: false,
     };
   };
 
-  if (full.length === 0) {
-    // No facts yet (pre-init): still produce a template-based letter.
+  if (!useCasesRaw || useCases.length === 0 || !userProfile) {
+    // No usable profile/use-cases yet (pre-init): still produce a template-based letter.
     return fallback();
   }
 
@@ -185,7 +267,10 @@ export async function generateCoverLetter(
       company: vacancy.companyName || "",
       candidate_name: name,
       template: templateText,
-      facts: full,
+      user_profile: userProfile,
+      use_cases: useCasesRaw,
+      vacancy_title: vacancy.title,
+      vacancy_full_text: `${vacancy.title}\n\n${vacancy.description}`.trim(),
     });
     const { data, rawText, modelId, durationMs } = await runAiJson({
       modelId: env.DRAFT_MODEL,

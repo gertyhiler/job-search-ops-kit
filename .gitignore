@@ -35,6 +35,7 @@ data/
 test-results/
 playwright-report/
 .playwright/
+.playwright-mcp/
 
 # OS / editor
 .DS_Store

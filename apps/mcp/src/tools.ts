@@ -41,7 +41,7 @@ const PROFILE_FILES = new Set([
   "experience-facts",
   "evidence",
   "resume-gaps",
-  "prompt-additions",
+  "use-cases",
 ]);
 const STRATEGY_FILE_SET = new Set<string>(STRATEGY_FILES);
 const PROMPT_FILES = new Set(["vacancy-scoring"]);
@@ -148,7 +148,7 @@ export function buildTools(): ToolDef[] {
     {
       name: "write_profile",
       description:
-        "Overwrite a profile markdown file. Allowed: user-profile, career-goals, constraints, compensation, experience-facts, evidence, resume-gaps, prompt-additions.",
+        "Overwrite a profile markdown file. Allowed: user-profile, career-goals, constraints, compensation, experience-facts, evidence, resume-gaps.",
       inputShape: { file: z.string(), content: z.string() },
       handler: (args, ctx) => {
         const file = args.file as string;

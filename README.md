@@ -68,4 +68,10 @@ pnpm job-search consolidate                  # derive insights from recent activ
 All user data lives under `data/` (gitignored). The repo is OSS-clean: a `pre-commit`
 privacy guard blocks secrets and personal data from ever being committed.
 
+Key profile files:
+
+- `data/profile/user-profile.md` — short positioning summary.
+- `data/profile/use-cases.md` — curated cases used for cover letters (1–2 per letter).
+- `data/profile/experience-facts.md` + `data/profile/evidence.md` — canonical truth store behind claims.
+
 See [SPEC.md](SPEC.md) for architecture, the safety rules, and the memory model.

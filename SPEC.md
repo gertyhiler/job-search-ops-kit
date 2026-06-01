@@ -45,6 +45,14 @@ SQLite is the **system of record** for operational data:
 Human-domain data lives as files under `data/` (gitignored): `profile/`, `strategy/`,
 `prompts/`, `templates/`, `resume/`, `memory/`, `browser/`, `exports/`.
 
+Key profile files (under `data/profile/`):
+
+- `user-profile.md` — short positioning summary; safe to load broadly into agent context.
+- `use-cases.md` — curated library of 8–12 reusable cases for cover letters (pick 1–2 per letter).
+- `experience-facts.md` — atomic, canonical facts; used for questionnaires and to back profile/use-cases.
+- `evidence.md` — supporting links/notes behind claims; backs facts/use-cases.
+- `resume-gaps.md` — backlog of resume improvements suggested by consolidation.
+
 ## 4. Queue types (exceptions)
 
 `auto_apply`, `manual_review`, `questionnaire`, `auth_required`, `captcha_or_antibot`,
@@ -94,9 +102,10 @@ playbook in `real` mode before it has passed a `dry_run`.
 ## 8. Evidence policy
 
 Everything claimed about the candidate in resumes, letters and questionnaire answers must
-trace to `data/profile/experience-facts.md` or `data/profile/evidence.md`. Missing fact
--> ask or leave a TODO; never invent companies, dates, titles, technologies or results.
-You may sharpen wording and re-order emphasis, not change meaning.
+be true and traceable. For cover letters, claims are drawn from `data/profile/user-profile.md`
+and `data/profile/use-cases.md` (and those must be backed by `data/profile/experience-facts.md`
+and/or `data/profile/evidence.md`). Missing fact -> ask or leave a TODO; never invent companies,
+dates, titles, technologies or results. You may sharpen wording and re-order emphasis, not change meaning.
 
 ## 9. AI subprocess contract
 

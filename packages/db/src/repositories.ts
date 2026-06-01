@@ -725,7 +725,7 @@ export function resolveOpenQueues(
     `UPDATE queues SET status = 'resolved', resolved_at = ?, updated_at = ?
      WHERE ${clauses.join(" AND ")}`,
   ).run(ts, ts, ...params);
-  return info.changes;
+  return Number(info.changes);
 }
 
 /** Retry auto applies that failed transiently (playbook/selector), not captcha. */
