@@ -23,8 +23,19 @@ const coverLetterSchema = z.object({
 export interface CoverLetterResult {
   text: string;
   templateId: string;
+  templateFile: string;
   usedFacts: string[];
   usedAi: boolean;
+  modelId?: string;
+}
+
+export interface GenerateCoverLetterOptions {
+  /** Override env.DRAFT_MODEL for this run. */
+  modelId?: string;
+  /** Skip AI and use the deterministic template + use-case fallback. */
+  forceFallback?: boolean;
+  /** Write to ai_generations when db is provided (default: true). */
+  persistLog?: boolean;
 }
 
 function chooseTemplate(v: NormalizedVacancy): { id: string; file: string } {
@@ -53,7 +64,10 @@ interface UseCase {
 }
 
 function readUserProfile(paths: Paths): string {
-  return readTextFileOr(path.join(paths.profileDir, "user-profile.md"), "").trim();
+  return readTextFileOr(
+    path.join(paths.profileDir, "user-profile.md"),
+    "",
+  ).trim();
 }
 
 function parseUseCases(markdown: string): UseCase[] {
@@ -68,7 +82,8 @@ function parseUseCases(markdown: string): UseCase[] {
     const [idRaw, ...titleParts] = header.split(":");
     const id = (idRaw || "").trim();
     if (!id.toUpperCase().startsWith("UC-")) continue;
-    const title = titleParts.join(":").trim() || header.replace(/^UC-[^:]+:\s*/, "");
+    const title =
+      titleParts.join(":").trim() || header.replace(/^UC-[^:]+:\s*/, "");
 
     const lines = body.split("\n").map((l) => l.trim());
     const signals: string[] = [];
@@ -105,7 +120,10 @@ function parseUseCases(markdown: string): UseCase[] {
 }
 
 function readUseCases(paths: Paths): { raw: string; cases: UseCase[] } {
-  const raw = readTextFileOr(path.join(paths.profileDir, "use-cases.md"), "").trim();
+  const raw = readTextFileOr(
+    path.join(paths.profileDir, "use-cases.md"),
+    "",
+  ).trim();
   return { raw, cases: raw ? parseUseCases(raw) : [] };
 }
 
@@ -113,7 +131,8 @@ function pickUseCaseBullets(
   vacancy: NormalizedVacancy,
   useCases: UseCase[],
 ): { bullets: string[]; used: string[] } {
-  const haystack = `${vacancy.title}\n${vacancy.companyName}\n${vacancy.keySkills.join(" ")}\n${vacancy.description}`.toLowerCase();
+  const haystack =
+    `${vacancy.title}\n${vacancy.companyName}\n${vacancy.keySkills.join(" ")}\n${vacancy.description}`.toLowerCase();
   const scored = useCases
     .map((uc) => {
       const signals = uc.signals.length ? uc.signals : [uc.title];
@@ -153,8 +172,9 @@ export function buildContactFooter(resume: Resume | null): string {
     /telegram/i.test(p.network),
   );
   let tgUrl = tgProfile?.url?.trim() ?? "";
-  const username = (tgProfile as { username?: string } | undefined)?.username
-    ?.trim();
+  const username = (
+    tgProfile as { username?: string } | undefined
+  )?.username?.trim();
   if (!tgUrl && username) {
     tgUrl = username.startsWith("http")
       ? username
@@ -200,10 +220,7 @@ export function finalizeCoverLetterText(
     .split("\n")
     .find((line) => line.startsWith("Telegram:"));
   const tgUrl = tgLine?.replace(/^Telegram:\s*/, "");
-  if (
-    (phone && text.includes(phone)) ||
-    (tgUrl && text.includes(tgUrl))
-  ) {
+  if ((phone && text.includes(phone)) || (tgUrl && text.includes(tgUrl))) {
     return text;
   }
 
@@ -215,8 +232,11 @@ export function finalizeCoverLetterText(
 export async function generateCoverLetter(
   deps: { env: Env; paths: Paths; db?: DB; logger?: Logger },
   vacancy: NormalizedVacancy,
+  options: GenerateCoverLetterOptions = {},
 ): Promise<CoverLetterResult> {
   const { env, paths } = deps;
+  const modelId = options.modelId ?? env.DRAFT_MODEL;
+  const persistLog = options.persistLog !== false;
   const tpl = chooseTemplate(vacancy);
   const templateText = readTextFileOr(
     path.join(paths.templatesDir, tpl.file),
@@ -240,7 +260,9 @@ export async function generateCoverLetter(
         {
           role: vacancy.title,
           company_suffix: companySuffix,
-          facts: factLines || "- Готов обсудить, какие use-cases из моего опыта лучше всего совпадают с вашими задачами.",
+          facts:
+            factLines ||
+            "- Готов обсудить, какие use-cases из моего опыта лучше всего совпадают с вашими задачами.",
           candidate_name: name,
           contact_footer: readContactFooter(paths),
         },
@@ -251,10 +273,15 @@ export async function generateCoverLetter(
     return {
       text,
       templateId: tpl.id,
+      templateFile: tpl.file,
       usedFacts: picked.used,
       usedAi: false,
     };
   };
+
+  if (options.forceFallback) {
+    return fallback();
+  }
 
   if (!useCasesRaw || useCases.length === 0 || !userProfile) {
     // No usable profile/use-cases yet (pre-init): still produce a template-based letter.
@@ -272,14 +299,20 @@ export async function generateCoverLetter(
       vacancy_title: vacancy.title,
       vacancy_full_text: `${vacancy.title}\n\n${vacancy.description}`.trim(),
     });
-    const { data, rawText, modelId, durationMs } = await runAiJson({
-      modelId: env.DRAFT_MODEL,
+    const {
+      data,
+      rawText,
+      modelId: usedModelId,
+      durationMs,
+    } = await runAiJson({
+      modelId,
       prompt,
       schema: coverLetterSchema,
       timeoutMs: env.AI_TIMEOUT_MS,
       maxRetries: env.AI_MAX_RETRIES,
     });
-    deps.db &&
+    persistLog &&
+      deps.db &&
       logGeneration(deps.db, {
         type: "cover_letter",
         inputHash: createHash("sha256")
@@ -288,13 +321,15 @@ export async function generateCoverLetter(
           .slice(0, 16),
         promptVersion: promptSourcePath("cover-letter", paths),
         outputText: rawText,
-        model: `${modelId} (${durationMs}ms)`,
+        model: `${usedModelId} (${durationMs}ms)`,
       });
     return {
       text: finalizeCoverLetterText(data.letter, paths, name),
       templateId: tpl.id,
+      templateFile: tpl.file,
       usedFacts: data.usedFacts,
       usedAi: true,
+      modelId: usedModelId,
     };
   } catch (error) {
     deps.logger?.warn(

@@ -1,5 +1,9 @@
 import path from "node:path";
-import { resumeSchema, type Resume } from "@job-search/contracts";
+import {
+  resumeSchema,
+  type NormalizedVacancy,
+  type Resume,
+} from "@job-search/contracts";
 import {
   loadEnv,
   loadResumeTheme,
@@ -31,16 +35,24 @@ import {
   buildSummaryText,
   createApp,
   createContext,
+  generateCoverLetter,
   runApply,
   runNotify,
   runPackage,
   runScore,
   runSearch,
 } from "@job-search/service";
-import { computeContentHash, mapWebToHhDetail, normalizeHhVacancy } from "@job-search/connectors";
+import {
+  computeContentHash,
+  mapWebToHhDetail,
+  normalizeHhVacancy,
+} from "@job-search/connectors";
 import { callToolOnce, listToolNames, startMcpServer } from "@job-search/mcp";
 import type { ParsedArgs } from "../args.ts";
-import { findManualReviewQueuedVacancyIds, findRecoverableRejectedVacancyIds } from "../recover-rejected.ts";
+import {
+  findManualReviewQueuedVacancyIds,
+  findRecoverableRejectedVacancyIds,
+} from "../recover-rejected.ts";
 
 function printJson(value: unknown): void {
   console.log(JSON.stringify(value, null, 2));
@@ -91,6 +103,80 @@ export async function letters(): Promise<void> {
   const ctx = createContext();
   printJson(await runPackage(ctx));
   ctx.db.close();
+}
+
+export async function lettersPreview(args: ParsedArgs): Promise<void> {
+  const idRaw = args.positionals[0];
+  if (!idRaw) {
+    console.error(
+      "Usage: job-search letters preview <id> [--model M] [--fallback] [--json]",
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  const id = Number(idRaw);
+  if (!Number.isFinite(id) || id <= 0) {
+    console.error(`Invalid vacancy id: ${idRaw}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const { env, paths } = envPaths();
+  const db = openAndMigrate(paths.dbPath);
+  try {
+    const row = getVacancyById(db, id);
+    if (!row) {
+      console.error(`Vacancy #${id} not found`);
+      process.exitCode = 1;
+      return;
+    }
+
+    let normalized: NormalizedVacancy;
+    try {
+      normalized = JSON.parse(
+        row.normalized_payload_json ?? "{}",
+      ) as NormalizedVacancy;
+    } catch {
+      console.error(`Vacancy #${id} has invalid normalized_payload_json`);
+      process.exitCode = 1;
+      return;
+    }
+
+    const modelOverride = args.flags.model as string | undefined;
+    const forceFallback = Boolean(args.flags.fallback);
+    const cover = await generateCoverLetter({ env, paths }, normalized, {
+      modelId: modelOverride,
+      forceFallback,
+      persistLog: false,
+    });
+
+    if (args.flags.json) {
+      printJson({
+        vacancyId: id,
+        title: normalized.title,
+        company: normalized.companyName ?? null,
+        mode: cover.usedAi ? "ai" : "fallback",
+        ...cover,
+      });
+      return;
+    }
+
+    console.log(`Vacancy #${id}: ${normalized.title}`);
+    if (normalized.companyName) {
+      console.log(`Company: ${normalized.companyName}`);
+    }
+    console.log(`Template: ${cover.templateId} (${cover.templateFile})`);
+    console.log(`Mode: ${cover.usedAi ? "ai" : "fallback"}`);
+    if (cover.usedAi && cover.modelId) {
+      console.log(`Model: ${cover.modelId}`);
+    }
+    console.log(`Used facts: ${cover.usedFacts.join(", ") || "—"}`);
+    console.log("\n--- letter ---\n");
+    console.log(cover.text);
+  } finally {
+    db.close();
+  }
 }
 
 export async function apply(args: ParsedArgs): Promise<void> {
@@ -272,7 +358,10 @@ export async function vacanciesImport(args: ParsedArgs): Promise<void> {
   }
 
   const parsed = new URL(url);
-  if (!parsed.hostname.endsWith("hh.ru") || !parsed.pathname.includes("/vacancy/")) {
+  if (
+    !parsed.hostname.endsWith("hh.ru") ||
+    !parsed.pathname.includes("/vacancy/")
+  ) {
     console.error(`Only HH vacancy URLs are supported for import: ${url}`);
     process.exitCode = 1;
     return;
@@ -300,9 +389,18 @@ export async function vacanciesImport(args: ParsedArgs): Promise<void> {
       type: "vacancy_imported",
       entityType: "vacancy",
       entityId: result.id,
-      payload: { source: normalized.source, externalId: normalized.externalId, url },
+      payload: {
+        source: normalized.source,
+        externalId: normalized.externalId,
+        url,
+      },
     });
-    printJson({ ok: true, vacancyId: result.id, isNew: result.isNew, changed: result.changed });
+    printJson({
+      ok: true,
+      vacancyId: result.id,
+      isNew: result.isNew,
+      changed: result.changed,
+    });
   } finally {
     db.close();
   }

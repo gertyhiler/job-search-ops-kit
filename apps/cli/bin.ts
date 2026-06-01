@@ -16,6 +16,8 @@ Pipeline
   score                    Score + classify apply-mode for new vacancies
   hh:sync | sync           search then score
   letters:generate         Generate cover letters / application packages
+  letters preview <id> [--model M] [--fallback] [--json]
+                           Preview one cover letter in the console (no DB write)
   apply [--dry-run|--real] Run the Playwright apply stage
   playbook repair         Clear broken_selector queues and requeue failed auto applies
   notify                   Send pending Telegram notifications
@@ -78,9 +80,21 @@ async function main(): Promise<void> {
       await run.sync();
       return;
     case "letters:generate":
-    case "letters":
     case "package":
       await run.letters();
+      return;
+    case "letters:preview":
+      await run.lettersPreview(args);
+      return;
+    case "letters":
+      if (args.positionals[0] === "preview") {
+        await run.lettersPreview({
+          ...args,
+          positionals: args.positionals.slice(1),
+        });
+      } else {
+        await run.letters();
+      }
       return;
     case "apply":
       await run.apply(args);
