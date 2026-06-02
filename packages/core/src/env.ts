@@ -7,9 +7,9 @@ const envSchema = z.object({
   DATA_DIR: z.string().default("data"),
   DATABASE_PATH: z.string().default("data/db/job-search.sqlite"),
   POLL_INTERVAL_SEC: z.coerce.number().int().positive().default(900),
-  FAST_MODEL: z.string().default("cursor.composer-2.5-fast"),
-  DRAFT_MODEL: z.string().default("codex.gpt-5.2"),
-  REASONING_MODEL: z.string().default("codex.gpt-5.2"),
+  FAST_MODEL: z.string().default("codex.gpt-5.4-mini"),
+  DRAFT_MODEL: z.string().default("codex.gpt-5.4"),
+  REASONING_MODEL: z.string().default("codex.gpt-5.4"),
   AI_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
   AI_MAX_RETRIES: z.coerce.number().int().min(0).default(1),
   TELEGRAM_BOT_TOKEN: z.string().default(""),
@@ -40,6 +40,8 @@ const envSchema = z.object({
   AUTO_APPLY_MODE: z.enum(["dry_run", "real"]).default("dry_run"),
   TYPST_BIN: z.string().default("typst"),
   CONSOLIDATION_EVENT_THRESHOLD: z.coerce.number().int().positive().default(25),
+  /** Cover letter generation: route (auto=template, high_value=AI), template, or ai. */
+  COVER_LETTER_MODE: z.enum(["route", "template", "ai"]).default("route"),
 });
 
 export type Env = z.infer<typeof envSchema>;

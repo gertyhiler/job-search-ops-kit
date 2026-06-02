@@ -7,3 +7,4 @@ export * from "./prompts.ts";
 export * from "./config.ts";
 export * from "./fs-utils.ts";
 export * from "./ai/index.ts";
+export * from "./cover-templates.ts";

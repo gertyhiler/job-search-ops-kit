@@ -48,6 +48,7 @@ export async function runPackage(
     const cover = await generateCoverLetter(
       { env: ctx.env, paths: ctx.paths, db: ctx.db, logger: ctx.logger },
       normalized,
+      { applyMode: row.apply_mode },
     );
 
     const app = createApplication(ctx.db, {

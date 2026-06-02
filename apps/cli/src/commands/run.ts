@@ -109,7 +109,7 @@ export async function lettersPreview(args: ParsedArgs): Promise<void> {
   const idRaw = args.positionals[0];
   if (!idRaw) {
     console.error(
-      "Usage: job-search letters preview <id> [--model M] [--fallback] [--json]",
+      "Usage: job-search letters preview <id> [--model M] [--fallback] [--mode auto|high_value] [--json]",
     );
     process.exitCode = 1;
     return;
@@ -144,10 +144,20 @@ export async function lettersPreview(args: ParsedArgs): Promise<void> {
     }
 
     const modelOverride = args.flags.model as string | undefined;
+    const modeFlag = args.flags.mode as string | undefined;
     const forceFallback = Boolean(args.flags.fallback);
+    let applyMode: string | undefined;
+    if (modeFlag === "auto" || modeFlag === "high_value") {
+      applyMode = modeFlag;
+    } else if (modeFlag) {
+      console.error(`Invalid --mode: ${modeFlag} (use auto or high_value)`);
+      process.exitCode = 1;
+      return;
+    }
     const cover = await generateCoverLetter({ env, paths }, normalized, {
       modelId: modelOverride,
       forceFallback,
+      applyMode,
       persistLog: false,
     });
 
