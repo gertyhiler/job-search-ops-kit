@@ -10,8 +10,7 @@ async function pageTextIncludes(
   try {
     const locator =
       root === "overlay" ? visibleOverlay(page) : page.locator("body");
-    const text = (await locator.innerText({ timeout: 3000 }))
-      .toLowerCase();
+    const text = (await locator.innerText({ timeout: 3000 })).toLowerCase();
     return needles.some((n) => text.includes(n.toLowerCase()));
   } catch {
     return false;
@@ -48,7 +47,14 @@ export async function detectCaptcha(page: Page): Promise<boolean> {
 }
 
 export async function detectQuestionnaire(page: Page): Promise<boolean> {
-  return bodyTextIncludes(page, HH.questionnaireText);
+  return (
+    (await bodyTextIncludes(page, HH.questionnaireText)) ||
+    (await pageTextIncludes(page, HH.questionnaireText, "overlay"))
+  );
+}
+
+export async function detectAuthWall(page: Page): Promise<boolean> {
+  return bodyTextIncludes(page, HH.authWallText);
 }
 
 export async function detectResumeChooser(page: Page): Promise<boolean> {

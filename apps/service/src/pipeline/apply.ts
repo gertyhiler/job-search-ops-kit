@@ -106,6 +106,7 @@ export async function runApply(
         )
       : 0;
 
+    const wouldDryRun = !(envReal && playbookReady);
     const gate = evaluateApplyGate({
       policy,
       applyMode: row.apply_mode,
@@ -117,7 +118,10 @@ export async function runApply(
       playbookStatus: playbook.status,
     });
 
-    if (!gate.allowed) {
+    const playbookBlockedDryRunRecovery =
+      !gate.allowed && gate.reason === "apply playbook disabled" && wouldDryRun;
+
+    if (!gate.allowed && !playbookBlockedDryRunRecovery) {
       if (gate.route === "manual_review") {
         enqueue(ctx.db, {
           type: "manual_review",
@@ -199,7 +203,11 @@ export async function runApply(
         result: "dry_run",
       });
       setVacancyStatus(ctx.db, row.id, "applied");
-      if (playbook.status === "draft")
+      if (
+        playbook.status === "draft" ||
+        playbook.status === "broken" ||
+        playbook.status === "needs_repair"
+      )
         setPlaybookStatus(ctx.db, playbook.id, "dry_run");
       const repaired = resolveOpenQueues(ctx.db, {
         type: "broken_selector",

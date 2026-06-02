@@ -608,7 +608,10 @@ export function countApplicationsToCompanySince(
 ): number {
   const row = prep(
     db,
-    `SELECT COUNT(*) AS n FROM applications WHERE company_id = ? AND created_at >= ?`,
+    `SELECT COUNT(*) AS n FROM applications
+     WHERE company_id = ?
+       AND created_at >= ?
+       AND status IN ('applied', 'dry_run', 'already_applied')`,
   ).get(companyId, sinceIso) as { n: number };
   return row.n;
 }
@@ -825,6 +828,13 @@ export function listEventsSince(
     db,
     `SELECT * FROM events WHERE created_at >= ? ORDER BY created_at ASC LIMIT ?`,
   ).all(sinceIso, limit) as EventRow[];
+}
+
+export function listEventsByType(db: DB, type: string, limit = 50): EventRow[] {
+  return prep(
+    db,
+    `SELECT * FROM events WHERE type = ? ORDER BY created_at DESC LIMIT ?`,
+  ).all(type, limit) as EventRow[];
 }
 
 export function countEventsSince(db: DB, sinceIso: string): number {

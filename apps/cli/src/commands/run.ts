@@ -24,6 +24,7 @@ import {
   requeuePackagedAutoRejected,
   requeueVacanciesForRescore,
   resolveOpenQueues,
+  setPlaybookStatus,
   upsertCompany,
   upsertVacancy,
 } from "@job-search/db";
@@ -207,6 +208,9 @@ export function playbookRepair(): void {
   const requeued = requeueFailedAutoApplies(db);
   const restored = requeuePackagedAutoRejected(db);
   recordPlaybookSuccess(db, playbook.id);
+  if (playbook.status === "broken" || playbook.status === "needs_repair") {
+    setPlaybookStatus(db, playbook.id, "dry_run");
+  }
   recordEvent(db, {
     type: "playbook_repaired",
     entityType: "playbook",
@@ -218,7 +222,10 @@ export function playbookRepair(): void {
     resolvedQueues,
     requeued,
     restored,
-    playbookStatus: playbook.status,
+    playbookStatus:
+      playbook.status === "broken" || playbook.status === "needs_repair"
+        ? "dry_run"
+        : playbook.status,
     funnel: getFunnel(db),
   });
   db.close();

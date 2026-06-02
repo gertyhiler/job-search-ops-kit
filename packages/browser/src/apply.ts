@@ -9,6 +9,7 @@ import type { Locator, Page } from "playwright";
 import { closeQuietly, launchContext } from "./browser.ts";
 import {
   detectAlreadyApplied,
+  detectAuthWall,
   detectCaptcha,
   detectQuestionnaire,
   detectResumeChooser,
@@ -157,10 +158,14 @@ async function captureArtifacts(
 
 async function clickSubmit(page: Page, timeout = 6000): Promise<boolean> {
   const { popup, dialog } = submitRoots(page);
-  if (await clickFirstIn(popup, HH.submitButton, HH.submitButtonText, timeout)) {
+  if (
+    await clickFirstIn(popup, HH.submitButton, HH.submitButtonText, timeout)
+  ) {
     return true;
   }
-  if (await clickFirstIn(dialog, HH.submitButton, HH.submitButtonText, timeout)) {
+  if (
+    await clickFirstIn(dialog, HH.submitButton, HH.submitButtonText, timeout)
+  ) {
     return true;
   }
   return clickFirst(page, HH.submitButton, HH.submitButtonText, timeout);
@@ -292,6 +297,24 @@ export async function applyToVacancy(input: ApplyInput): Promise<ApplyOutcome> {
       });
     }
 
+    if (await detectAuthWall(page)) {
+      ({ savedScreenshot, savedTrace } = await captureArtifacts(
+        page,
+        context,
+        screenshotPath,
+        tracePath,
+        tracingStarted,
+      ));
+      return fail(
+        "auth_required",
+        "Vacancy access denied or auth wall on HH.",
+        {
+          screenshotPath: savedScreenshot,
+          tracePath: savedTrace,
+        },
+      );
+    }
+
     if (await detectCaptcha(page)) {
       ({ savedScreenshot, savedTrace } = await captureArtifacts(
         page,
@@ -336,6 +359,16 @@ export async function applyToVacancy(input: ApplyInput): Promise<ApplyOutcome> {
         tracePath,
         tracingStarted,
       ));
+      if (await detectAuthWall(page)) {
+        return fail(
+          "auth_required",
+          "Respond button missing due to auth wall on vacancy page.",
+          {
+            screenshotPath: savedScreenshot,
+            tracePath: savedTrace,
+          },
+        );
+      }
       return fail("selector_broken", "Respond button not found.", {
         screenshotPath: savedScreenshot,
         tracePath: savedTrace,

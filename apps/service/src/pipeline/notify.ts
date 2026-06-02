@@ -3,6 +3,7 @@ import {
   getApplicationByVacancy,
   getVacancyById,
   listApplications,
+  listEventsByType,
   listQueue,
   listVacanciesByStatus,
   markTelegramFailed,
@@ -57,17 +58,17 @@ async function deliver(
   kind: string,
   entityId: number,
   text: string,
-  vacancyIdForButtons?: number,
+  options?: { entityType?: string; vacancyIdForButtons?: number },
 ): Promise<boolean> {
   const claim = claimTelegramDelivery(ctx.db, {
     kind,
-    entityType: "vacancy",
+    entityType: options?.entityType ?? "vacancy",
     entityId,
     chatId: ctx.env.TELEGRAM_CHAT_ID,
   });
   if (!claim) return false;
   try {
-    const sent = await ctx.notifier.send(text, vacancyIdForButtons);
+    const sent = await ctx.notifier.send(text, options?.vacancyIdForButtons);
     if (sent) {
       markTelegramSent(ctx.db, claim.id, sent.messageId);
       return true;
@@ -101,7 +102,11 @@ export async function runNotify(ctx: PipelineContext): Promise<NotifyReport> {
       toNotification(row, app?.cover_letter_text ?? ""),
       "Вакансия на ваше решение",
     );
-    if (await deliver(ctx, "vacancy_high_value", row.id, text, row.id))
+    if (
+      await deliver(ctx, "vacancy_high_value", row.id, text, {
+        vacancyIdForButtons: row.id,
+      })
+    )
       report.sent += 1;
   }
 
@@ -143,6 +148,31 @@ export async function runNotify(ctx: PipelineContext): Promise<NotifyReport> {
       if (await deliver(ctx, `queue_${q.type}`, item.entity_id, text))
         report.sent += 1;
     }
+  }
+
+  // 4) Playbook disabled after repeated selector/network failures.
+  for (const event of listEventsByType(ctx.db, "playbook_broken", 10)) {
+    if (!event.entity_id) continue;
+    const payload = event.payload_json
+      ? (JSON.parse(event.payload_json) as { source?: string; type?: string })
+      : {};
+    const source = payload.source ?? "hh";
+    const text = formatAlert(
+      "🧱",
+      "Сломался плейбук отклика",
+      [
+        `Источник: ${source} / ${payload.type ?? "apply"}`,
+        `Время: ${event.created_at}`,
+        "Автоотклики остановлены после серии ошибок selector_broken.",
+        "Проверьте playwright-repair, затем: job-search playbook repair",
+      ].join("\n"),
+    );
+    if (
+      await deliver(ctx, "playbook_broken", event.entity_id, text, {
+        entityType: "playbook",
+      })
+    )
+      report.sent += 1;
   }
 
   if (report.sent > 0) ctx.logger.info({ report }, "Notify stage finished");

@@ -15,6 +15,11 @@ export const HH = {
     "Отклик отправлен",
   ],
   loginText: ["Войти", "Вход", "Авторизуйтесь"],
+  /** HH shows this when cookies exist but the session cannot view the vacancy. */
+  authWallText: [
+    "Вам недоступна эта вакансия",
+    "Войдите как пользователь, у которого есть доступ",
+  ],
   authCookieName: "hhtoken",
   /** Guest sessions also get hhtoken; role distinguishes anonymous vs logged-in. */
   authRoleCookieName: "hhrole",
@@ -50,6 +55,7 @@ export const HH = {
   ],
   questionnaireText: [
     "Заполните анкету",
+    "Ответьте на вопросы",
     "ответьте на вопрос",
     "обязательные вопросы",
     "Тестовое задание",
